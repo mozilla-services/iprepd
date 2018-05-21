@@ -1,0 +1,25 @@
+---
+listen: 0.0.0.0:8080
+redis:
+  addr: 127.0.0.1:6379
+auth:
+  hawk:
+    root: toor
+  apikey:
+    testuser: test
+  disableauth: false
+violations:
+  - name: test
+    penalty: 50
+    decreaselimit: 50
+  - name: test2
+    penalty: 5
+    decreaselimit: 25
+decay:
+  points: 1
+  interval: 1s
+exceptions:
+  file:
+    - ./exception1.txt
+    - ./exception2.txt
+  aws: false
