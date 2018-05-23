@@ -4,4 +4,5 @@ services:
   - docker
 
 script:
+  - ./write_version_json.sh
   - docker-compose run test
