@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/mozilla-services/iprepd"
+	"go.mozilla.org/iprepd"
 )
 
 func main() {
