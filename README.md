@@ -20,6 +20,13 @@ See [iprepd.yaml.sample](./iprepd.yaml.sample) for an example configuration.
 docker build -t iprepd:latest .
 ```
 
+Docker images are also [published](https://hub.docker.com/r/mozilla/iprepd/).
+
+```bash
+docker pull mozilla/iprepd:latest
+docker run -ti --rm -v `pwd`/iprepd.yaml:/app/iprepd.yaml mozilla/iprepd:latest
+```
+
 ## API
 
 #### GET /10.0.0.1
@@ -118,3 +125,8 @@ Service heartbeat endpoint.
 #### GET /\_\_version\_\_
 
 Return version data.
+
+## Acknowledgements
+
+The API design and overall concept for this project are based on work done in
+[Tigerblood](https://github.com/mozilla-services/tigerblood).
