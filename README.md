@@ -13,6 +13,13 @@ can be overridden with the `-c` flag.
 
 See [iprepd.yaml.sample](./iprepd.yaml.sample) for an example configuration.
 
+## Building the Docker image
+
+```bash
+./write_version_json.sh
+docker build -t iprepd:latest .
+```
+
 ## API
 
 #### GET /10.0.0.1
