@@ -57,3 +57,7 @@ exceptions:
   # If aws is set to true, iprepd will periodically query for known AWS IP address ranges and
   # add these to the exception list.
   aws: false
+# versionresponse specifies a path to a file, the contents of which will be returned on a
+# request to the /__version__ endpoint. If the file isn't found a warning will be printed
+# in the log and the daemon will not return any data at this endpoint.
+versionresponse: ./version.json

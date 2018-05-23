@@ -50,6 +50,7 @@ func startAPI() error {
 }
 
 func httpVersion(w http.ResponseWriter, r *http.Request) {
+	w.Write(sruntime.versionResponse)
 }
 
 func httpHeartbeat(w http.ResponseWriter, r *http.Request) {

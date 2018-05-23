@@ -11,8 +11,9 @@ import (
 )
 
 type serverRuntime struct {
-	cfg   serverCfg
-	redis *redis.Client
+	cfg             serverCfg
+	redis           *redis.Client
+	versionResponse []byte
 }
 
 type serverCfg struct {
@@ -34,6 +35,14 @@ type serverCfg struct {
 		File []string
 		AWS  bool
 	}
+	VersionResponse string
+}
+
+func (cfg *serverCfg) validate() error {
+	if cfg.VersionResponse == "" {
+		cfg.VersionResponse = "./version.json"
+	}
+	return nil
 }
 
 func (cfg *serverCfg) getViolation(v string) *Violation {
@@ -69,7 +78,7 @@ func loadCfg(confpath string) (ret serverCfg, err error) {
 	if err != nil {
 		return
 	}
-	return
+	return ret, ret.validate()
 }
 
 func StartDaemon(confpath string) {
@@ -83,6 +92,10 @@ func StartDaemon(confpath string) {
 	sruntime.redis, err = initRedis(sruntime.cfg.Redis.Addr)
 	if err != nil {
 		log.Fatalf(err.Error())
+	}
+	sruntime.versionResponse, err = ioutil.ReadFile(sruntime.cfg.VersionResponse)
+	if err != nil {
+		log.Warnf(err.Error())
 	}
 	go startExceptions()
 	err = startAPI()
