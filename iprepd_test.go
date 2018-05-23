@@ -40,7 +40,12 @@ func TestLoadSampleConfig(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	var err error
-	sruntime.redis, err = initRedis("127.0.0.1:6379")
+	redisAddr := "127.0.0.1:6379"
+	renv := os.Getenv("IPREPD_TEST_REDISADDR")
+	if renv != "" {
+		redisAddr = renv
+	}
+	sruntime.redis, err = initRedis(redisAddr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
