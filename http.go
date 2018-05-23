@@ -11,6 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ViolationRequest represents the structure used to apply a violation to a given
+// IP address. This structure is used as the basis for unmarshaling requests to
+// violation handlers in the API.
 type ViolationRequest struct {
 	IP        string
 	Violation string

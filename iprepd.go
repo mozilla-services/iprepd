@@ -81,6 +81,7 @@ func loadCfg(confpath string) (ret serverCfg, err error) {
 	return ret, ret.validate()
 }
 
+// StartDaemon starts a new instance of iprepd using configuration file confpath.
 func StartDaemon(confpath string) {
 	log.Infof("starting daemon")
 

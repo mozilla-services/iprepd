@@ -24,6 +24,7 @@ type Reputation struct {
 	LastUpdated time.Time `json:"lastupdated"`
 }
 
+// Validate performs validation and normalization of a Reputation type.
 func (r *Reputation) Validate() error {
 	// Assume we already have verification of the IP address through the handlers,
 	// so just check the reputation score here
