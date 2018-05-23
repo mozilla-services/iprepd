@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/mozilla-services/yaml"
 	log "github.com/sirupsen/logrus"
 	"go.mozilla.org/mozlogrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type serverRuntime struct {
