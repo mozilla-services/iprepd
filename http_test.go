@@ -396,3 +396,99 @@ func TestUnknownViolation(t *testing.T) {
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 }
+
+func TestReviewedReset(t *testing.T) {
+	assert.Nil(t, baseTest())
+	sruntime.cfg.Auth.DisableAuth = true
+	h := mwHandler(newRouter())
+
+	// Verify that the reviewed flag is correctly toggled off if a reputation decays
+	// to 100.
+	recorder := httptest.NewRecorder()
+	buf := "{\"ip\": \"192.168.4.1\", \"violation\": \"violation1\"}"
+	req := httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res := recorder.Result()
+	buf2, err := ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	var r Reputation
+	err = json.Unmarshal(buf2, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.4.1", r.IP)
+	assert.Equal(t, 95, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+
+	// Toggle the reviewed flag to true
+	recorder = httptest.NewRecorder()
+	r.Reviewed = true
+	buf2, err = json.Marshal(r)
+	assert.Nil(t, err)
+	req = httptest.NewRequest("PUT", "/192.168.4.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf2, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf2, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.4.1", r.IP)
+	assert.Equal(t, 95, r.Reputation)
+	assert.Equal(t, true, r.Reviewed)
+
+	// Adjust decay rate to decay the reputation up to 100, and manually readd the value
+	// and force the updated time so the decay takes effect
+	sruntime.cfg.Decay.Points = 50
+	sruntime.cfg.Decay.Interval = time.Second
+	r.LastUpdated = time.Now().Add(-1 * (time.Second * 10)).UTC()
+	buf2, err = json.Marshal(r)
+	assert.Nil(t, err)
+	err = sruntime.redis.Set(r.IP, buf, 0).Err()
+	assert.Nil(t, err)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf2, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf2, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.4.1", r.IP)
+	assert.Equal(t, 100, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+
+	// Apply the violation again now that the IP has decayed to 100
+	recorder = httptest.NewRecorder()
+	buf = "{\"ip\": \"192.168.4.1\", \"violation\": \"violation1\"}"
+	req = httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// Reset the decay rate, and verify the flag is off
+	sruntime.cfg.Decay.Points = 0
+	sruntime.cfg.Decay.Interval = time.Minute
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf2, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf2, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.4.1", r.IP)
+	assert.Equal(t, 95, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+}

@@ -14,6 +14,8 @@ func baseTest() error {
 	if err != nil {
 		return err
 	}
+	sruntime.cfg.Decay.Points = 0
+	sruntime.cfg.Decay.Interval = time.Minute
 	r := Reputation{
 		IP:         "192.168.0.1",
 		Reputation: 50,
