@@ -61,6 +61,7 @@ func TestMain(m *testing.M) {
 	sruntime.cfg.Violations = []Violation{
 		{"violation1", 5, 25},
 		{"violation2", 50, 50},
+		{"violation3", 0, 0},
 	}
 	loadExceptions()
 	os.Exit(m.Run())
