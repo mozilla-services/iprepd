@@ -125,6 +125,8 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	// Force IP field to match value specified in request path
+	rep.IP = ipstr
 	err = rep.Validate()
 	if err != nil {
 		log.Warnf(err.Error())
@@ -140,6 +142,7 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"ip":         rep.IP,
 		"reputation": rep.Reputation,
+		"exception":  isException(rep.IP),
 	}).Info("reputation set")
 }
 
@@ -234,6 +237,7 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 			"ip":                  rep.IP,
 			"reputation":          rep.Reputation,
 			"original_reputation": origRep,
+			"exception":           isException(rep.IP),
 		}).Info("violation applied")
 	}
 }
