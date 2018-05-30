@@ -1,8 +1,8 @@
 #!/bin/bash
 
 tag="latest"
-if [[ -n "$TRAVIS_TAG" ]]; then
-	tag=$TRAVIS_TAG
+if [[ -n "$CIRCLE_TAG" ]]; then
+	tag=$CIRCLE_TAG
 fi
 
 docker tag iprepd:build mozilla/iprepd:${tag}
