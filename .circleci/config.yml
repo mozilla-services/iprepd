@@ -26,4 +26,4 @@ jobs:
       - run:
          name: Push to Docker Hub
          command: |
-           if [[ "${CIRCLE_BRANCH}" == "master" || -n "${CIRCLE_TAG}" ]]; then ./docker_push.sh fi
+           if [[ "${CIRCLE_BRANCH}" == "master" || -n "${CIRCLE_TAG}" ]]; then ./docker_push.sh; fi
