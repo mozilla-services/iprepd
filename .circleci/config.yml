@@ -27,3 +27,12 @@ jobs:
          name: Push to Docker Hub
          command: |
            if [[ "${CIRCLE_BRANCH}" == "master" || -n "${CIRCLE_TAG}" ]]; then ./docker_push.sh; fi
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
