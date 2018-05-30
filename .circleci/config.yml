@@ -23,29 +23,7 @@ jobs:
       - run:
           name: Run tests
           command: docker-compose run test
-  deploy:
-    docker:
-      - image: circleci/golang:1.10
-
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
-    steps:
       - run:
          name: Push to Docker Hub
-         command: ./docker_push.sh
-
-workflows:
-  version: 2
-  build-test-deploy:
-    jobs:
-      - build:
-          filters:
-            branches:
-              only: /.*/
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /^\d+\.\d+$/
+         command: |
+           if [[ "${CIRCLE_BRANCH}" == "master" || -n "${CIRCLE_TAG}" ]]; then ./docker_push.sh fi
