@@ -2,9 +2,9 @@ package iprepd
 
 import (
 	"io/ioutil"
+	"math/rand"
 	"time"
 
-	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"go.mozilla.org/mozlogrus"
 	yaml "gopkg.in/yaml.v2"
@@ -12,14 +12,18 @@ import (
 
 type serverRuntime struct {
 	cfg             serverCfg
-	redis           *redis.Client
+	redis           redisLink
 	versionResponse []byte
 }
 
 type serverCfg struct {
 	Listen string
 	Redis  struct {
-		Addr string
+		Addr         string
+		Replicas     []string
+		ReadTimeout  int
+		WriteTimeout int
+		DialTimeout  int
 	}
 	Auth struct {
 		DisableAuth bool
@@ -42,6 +46,15 @@ func (cfg *serverCfg) validate() error {
 	if cfg.VersionResponse == "" {
 		cfg.VersionResponse = "./version.json"
 	}
+	if cfg.Redis.ReadTimeout == 0 {
+		cfg.Redis.ReadTimeout = 50
+	}
+	if cfg.Redis.WriteTimeout == 0 {
+		cfg.Redis.WriteTimeout = 50
+	}
+	if cfg.Redis.DialTimeout == 0 {
+		cfg.Redis.DialTimeout = 100
+	}
 	return nil
 }
 
@@ -58,15 +71,7 @@ var sruntime serverRuntime
 
 func init() {
 	mozlogrus.Enable("iprepd")
-}
-
-func initRedis(addr string) (ret *redis.Client, err error) {
-	ret = redis.NewClient(&redis.Options{
-		Addr: addr,
-		DB:   0,
-	})
-	_, err = ret.Ping().Result()
-	return
+	rand.Seed(time.Now().Unix())
 }
 
 func loadCfg(confpath string) (ret serverCfg, err error) {
@@ -90,7 +95,7 @@ func StartDaemon(confpath string) {
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
-	sruntime.redis, err = initRedis(sruntime.cfg.Redis.Addr)
+	sruntime.redis, err = newRedisLink(sruntime.cfg)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

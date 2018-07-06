@@ -10,7 +10,7 @@ import (
 )
 
 func baseTest() error {
-	_, err := sruntime.redis.FlushAll().Result()
+	_, err := sruntime.redis.flushAll().Result()
 	if err != nil {
 		return err
 	}
@@ -41,13 +41,21 @@ func TestLoadSampleConfig(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	var err error
-	redisAddr := "127.0.0.1:6379"
+	var (
+		err  error
+		tcfg serverCfg
+	)
+	tcfg.Redis.Addr = "127.0.0.1:6379"
+	err = tcfg.validate()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 	renv := os.Getenv("IPREPD_TEST_REDISADDR")
 	if renv != "" {
-		redisAddr = renv
+		tcfg.Redis.Addr = renv
 	}
-	sruntime.redis, err = initRedis(redisAddr)
+	sruntime.redis, err = newRedisLink(tcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)

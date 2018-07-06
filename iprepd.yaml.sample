@@ -3,7 +3,16 @@
 listen: 0.0.0.0:8080
 # Address/port for Redis connection
 redis:
+  # The primary Redis server.
   addr: 127.0.0.1:6379
+  # Support a Redis "cluster mode disabled" cluster with read replicas. Any read only replica
+  # instances can be added here.
+  #replicas:
+  #  - 127.0.0.1:7000
+  # Read, write, and dial connection timeouts in ms (defaults shown).
+  readtimeout: 50
+  writetimeout: 50
+  dialtimeout: 100
 auth:
   # Configure any Hawk credentials here. Each credential should be specified as a key/value
   # pair, where the key is the Hawk ID and the value is the secret.

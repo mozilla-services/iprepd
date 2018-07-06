@@ -44,7 +44,7 @@ func (r *Reputation) set() error {
 	if err != nil {
 		return err
 	}
-	return sruntime.redis.Set(r.IP, buf, time.Hour*24).Err()
+	return sruntime.redis.set(r.IP, buf, time.Hour*24).Err()
 }
 
 func (r *Reputation) applyViolation(v string) (found bool, err error) {
@@ -92,7 +92,7 @@ type Violation struct {
 }
 
 func repGet(ipstr string) (ret Reputation, err error) {
-	buf, err := sruntime.redis.Get(ipstr).Bytes()
+	buf, err := sruntime.redis.get(ipstr)
 	if err != nil {
 		return
 	}
@@ -105,6 +105,6 @@ func repGet(ipstr string) (ret Reputation, err error) {
 }
 
 func repDelete(ipstr string) (err error) {
-	_, err = sruntime.redis.Del(ipstr).Result()
+	_, err = sruntime.redis.del(ipstr).Result()
 	return
 }

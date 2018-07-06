@@ -318,7 +318,7 @@ func TestDecay(t *testing.T) {
 	}
 	buf, err := json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.Set(r.IP, buf, 0).Err()
+	err = sruntime.redis.set(r.IP, buf, 0).Err()
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
@@ -454,7 +454,7 @@ func TestReviewedReset(t *testing.T) {
 	r.LastUpdated = time.Now().Add(-1 * (time.Second * 10)).UTC()
 	buf2, err = json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.Set(r.IP, buf, 0).Err()
+	err = sruntime.redis.set(r.IP, buf, 0).Err()
 	assert.Nil(t, err)
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
