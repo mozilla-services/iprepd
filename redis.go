@@ -56,6 +56,9 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 		DialTimeout:  time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
 	})
 	_, err = ret.ping().Result()
+	if err != nil {
+		return
+	}
 	ret.readClients = make([]*redis.Client, 0)
 	for _, x := range cfg.Redis.Replicas {
 		y := redis.NewClient(&redis.Options{
