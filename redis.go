@@ -22,13 +22,9 @@ func (r *redisLink) flushAll() *redis.StatusCmd {
 }
 
 func (r *redisLink) get(k string) (ret []byte, err error) {
-	readRot := make([]*redis.Client, len(r.readClients))
 	p := rand.Perm(len(r.readClients))
-	for a, b := range p {
-		readRot[b] = r.readClients[a]
-	}
-	for i := range readRot {
-		ret, err = readRot[i].Get(k).Bytes()
+	for _, i := range p {
+		ret, err = r.readClients[i].Get(k).Bytes()
 		if err == nil || (err != nil && err == redis.Nil) {
 			return
 		}
