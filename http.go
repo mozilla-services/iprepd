@@ -57,7 +57,7 @@ func httpVersion(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpHeartbeat(w http.ResponseWriter, r *http.Request) {
-	_, err := sruntime.redis.Ping().Result()
+	_, err := sruntime.redis.ping().Result()
 	if err != nil {
 		log.Warnf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
