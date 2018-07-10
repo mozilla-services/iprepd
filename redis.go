@@ -57,6 +57,11 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 	}
 	ret.readClients = make([]*redis.Client, 0)
 	for _, x := range cfg.Redis.Replicas {
+		// We are going to add the master later; if we also see it specified in the replica
+		// configuration just skip it for now
+		if x == cfg.Redis.Addr {
+			continue
+		}
 		y := redis.NewClient(&redis.Options{
 			Addr:        x,
 			DB:          0,
