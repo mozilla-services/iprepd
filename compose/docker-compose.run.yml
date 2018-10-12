@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+  iprepd:
+    volumes:
+      - '$CONFIG_VOLUME:/app/config/'
+    command: bash -c '/app/bin/iprepd -c /app/config/iprepd.yaml'

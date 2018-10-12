@@ -19,10 +19,10 @@ jobs:
           command: ./write_version_json.sh
       - run:
           name: Build containers
-          command: docker-compose build
+          command: make build
       - run:
           name: Run tests
-          command: docker-compose run test
+          command: make test
       - run:
          name: Push to Docker Hub
          command: |

@@ -7,15 +7,14 @@ services:
     ports:
       - "6379:6379"
 
-  test:
+  iprepd:
     container_name: iprepd_app
     image: iprepd:build
     build:
-      context: .
+      context: ../.
     environment:
       - IPREPD_TEST_REDISADDR=redis:6379
     links:
       - redis
     ports:
       - "8080:8080"
-    command: bash -c 'cd /go/src/go.mozilla.org/iprepd && go test -v'
