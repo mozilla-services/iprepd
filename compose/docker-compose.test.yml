@@ -1,0 +1,5 @@
+version: '3'
+
+services:
+  iprepd:
+    command: bash -c 'cd /go/src/go.mozilla.org/iprepd && go test -v'
