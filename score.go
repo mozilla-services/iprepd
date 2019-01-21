@@ -22,6 +22,12 @@ type Reputation struct {
 	// LastUpdated indicates when a reputation was last either set manually or via
 	// a violation on this entry
 	LastUpdated time.Time `json:"lastupdated"`
+
+	// DecayAfter is used to temporarily stop reputation recovery until after the
+	// current time has passed the time indicated by DecayAfter. This can be used
+	// to for example enforce a mandatory minimum reputation decrease for an address
+	// for a set period of time.
+	DecayAfter time.Time `json:"decayafter"`
 }
 
 // Validate performs validation and normalization of a Reputation type.
@@ -65,6 +71,18 @@ func (r *Reputation) applyViolation(v string) (found bool, err error) {
 }
 
 func (r *Reputation) applyDecay() error {
+	// If DecayAfter is set and we haven't past the indicated time stamp yet
+	// don't do anything with the current reputation value.
+	//
+	// If the value is set and we have passed the indicated point in time, replace
+	// the value with the zero value.
+	if !r.DecayAfter.IsZero() {
+		if r.DecayAfter.After(time.Now().UTC()) {
+			return nil
+		}
+		r.DecayAfter = time.Time{}
+	}
+
 	x := sruntime.cfg.Decay.Points *
 		int(time.Since(r.LastUpdated)/sruntime.cfg.Decay.Interval)
 	if r.Reputation+x > 100 {

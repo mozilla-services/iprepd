@@ -2,9 +2,11 @@ package iprepd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
@@ -15,8 +17,17 @@ import (
 // IP address. This structure is used as the basis for unmarshaling requests to
 // violation handlers in the API.
 type ViolationRequest struct {
-	IP        string
-	Violation string
+	IP               string `json:"ip"`
+	Violation        string `json:"violation"`
+	SuppressRecovery int    `json:"suppress_recovery,omitempty"`
+}
+
+// Validate performs validation of a ViolationRequest type
+func (v *ViolationRequest) Validate() error {
+	if v.SuppressRecovery > 259200 {
+		return fmt.Errorf("invalid suppress recovery value %v", v.SuppressRecovery)
+	}
+	return nil
 }
 
 func mwHandler(h http.Handler) http.Handler {
@@ -202,6 +213,13 @@ func httpPutViolations(w http.ResponseWriter, r *http.Request) {
 
 func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []ViolationRequest) {
 	for _, v := range vs {
+		err := v.Validate()
+		if err != nil {
+			log.Warnf(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		rep, err := repGet(v.IP)
 		if err == redis.Nil {
 			rep = Reputation{IP: v.IP, Reputation: 100}
@@ -210,6 +228,18 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		// If recovery suppression was specified add the correct timestamp to the reputation
+		// entry. Is suppression is already indicated, only update it if it results in a new
+		// timestamp that is beyond what the existing value is.
+		if v.SuppressRecovery > 0 {
+			nd := time.Now().UTC().Add(time.Second *
+				time.Duration(v.SuppressRecovery))
+			if rep.DecayAfter.IsZero() || rep.DecayAfter.Before(nd) {
+				rep.DecayAfter = nd
+			}
+		}
+
 		origRep := rep.Reputation
 		found, err := rep.applyViolation(v.Violation)
 		if err != nil {
@@ -236,6 +266,7 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 			"violation":           v.Violation,
 			"ip":                  rep.IP,
 			"reputation":          rep.Reputation,
+			"decay_after":         rep.DecayAfter,
 			"original_reputation": origRep,
 			"exception":           isException(rep.IP),
 		}).Info("violation applied")

@@ -35,6 +35,10 @@ Request the reputation for an IP address. Responds with 200 and a JSON document 
 reputation if found. Responds with a 404 if the IP address is unknown to iprepd, or is in the
 exceptions list.
 
+The response body may include a `decayafter` element if the reputation for the address was changed
+with a recovery suppression applied. If the timestamp is present, it indicates the time after which
+the reputation for the address will begin to recover.
+
 ##### Response body
 
 ```json
@@ -58,6 +62,11 @@ can be included and set to true to toggle the reviewed field for a given reputat
 
 Note that if the reputation decays back to 100, if the reviewed field is set on the entry it will
 toggle back to false.
+
+The reputation will begin to decay back to 100 immediately for the address based on the decay
+settings in the configuration file. If it is desired that the reputation should not decay for a
+period of time, the `decayafter` field can be set with a timestamp to indicate when the reputation
+decay logic should begin to be applied for the entry.
 
 ##### Request body
 
@@ -87,6 +96,14 @@ Applies a violation penalty to an IP address.
 
 If an unknown violation penalty is submitted, this endpoint will still return 200, but the
 error will be logged.
+
+If desired, `suppress_recovery` can be included in the request body and set to an integer which
+indicates the number of seconds that must elapse before the reputation for this entry will begin
+to decay back to 100. If this setting is not included, the reputation will begin to decay
+immediately. If the violation is being applied to an existing entry, the `suppress_recovery` field
+will only be applied if the existing entry has no current recovery suppression, or the specified
+recovery suppression time frame would result in a time in the future beyond which the entry
+currently has. If `suppress_recovery` is included it must be less than `259200` (72 hours).
 
 ##### Request body
 

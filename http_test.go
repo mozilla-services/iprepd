@@ -139,6 +139,7 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, "192.168.3.1", r.IP)
 	assert.Equal(t, 95, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
+	assert.True(t, r.DecayAfter.IsZero())
 
 	// put violations
 	recorder = httptest.NewRecorder()
@@ -172,6 +173,75 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, "192.168.5.1", r.IP)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
+
+	// put violation with recovery suppression
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\",\"suppress_recovery\":120}"
+	dt := time.Now().UTC().Add(time.Second * time.Duration(120))
+	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.6.1", r.IP)
+	assert.Equal(t, 95, r.Reputation)
+	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
+
+	// ensure recovery suppression remains after a subsequent violation without suppression indicated
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\"}"
+	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.6.1", r.IP)
+	assert.Equal(t, 90, r.Reputation)
+	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
+
+	// apply suppression that is less than what is currently configured, should not change entry
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\", \"suppress_recovery\":5}"
+	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.6.1", r.IP)
+	assert.Equal(t, 85, r.Reputation)
+	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
+
+	// put violation with bad recovery suppression
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"ip\": \"192.168.7.1\", \"violation\": \"violation1\",\"suppress_recovery\":999999999}"
+	req = httptest.NewRequest("PUT", "/violations/192.168.7.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 }
 
 func TestViolationDecreaseLimit(t *testing.T) {
@@ -363,6 +433,104 @@ func TestDecay(t *testing.T) {
 	assert.Equal(t, "192.168.2.1", r.IP)
 	assert.Equal(t, 100, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
+}
+
+func TestDecayAfter(t *testing.T) {
+	assert.Nil(t, baseTest())
+	sruntime.cfg.Auth.DisableAuth = true
+	h := mwHandler(newRouter())
+
+	dt := time.Now().Add(time.Second * 60)
+	r := Reputation{
+		IP:          "192.168.2.1",
+		Reputation:  50,
+		LastUpdated: time.Now().Add(-1 * (time.Second * 10)).UTC(),
+		DecayAfter:  dt,
+	}
+	buf, err := json.Marshal(r)
+	assert.Nil(t, err)
+	err = sruntime.redis.set(r.IP, buf, 0).Err()
+
+	// initial request with default (no) decay
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/192.168.2.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res := recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.2.1", r.IP)
+	assert.Equal(t, 50, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+
+	// adjust the decay, but the reputation should remain the same since the decayafter timestamp has
+	// not been reached
+	sruntime.cfg.Decay.Points = 1
+	sruntime.cfg.Decay.Interval = time.Second
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.2.1", r.IP)
+	assert.Equal(t, 50, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
+}
+
+func TestDecayAfterPast(t *testing.T) {
+	assert.Nil(t, baseTest())
+	sruntime.cfg.Auth.DisableAuth = true
+	h := mwHandler(newRouter())
+
+	r := Reputation{
+		IP:          "192.168.2.1",
+		Reputation:  50,
+		LastUpdated: time.Now().Add(-1 * (time.Second * 10)).UTC(),
+		DecayAfter:  time.Now().Add(-1 * (time.Second * 60)),
+	}
+	buf, err := json.Marshal(r)
+	assert.Nil(t, err)
+	err = sruntime.redis.set(r.IP, buf, 0).Err()
+
+	// initial request with default (no) decay
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/192.168.2.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res := recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.2.1", r.IP)
+	assert.Equal(t, 50, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+
+	// adjust the decay and verify it is being applied
+	sruntime.cfg.Decay.Points = 1
+	sruntime.cfg.Decay.Interval = time.Second
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.2.1", r.IP)
+	assert.InDelta(t, 60, r.Reputation, 2)
+	assert.Equal(t, false, r.Reviewed)
+	// since DecayAfter has past, the zero value should have been sent as the
+	// DecayAfter value
+	assert.True(t, r.DecayAfter.IsZero())
 }
 
 func TestUnknownViolation(t *testing.T) {
