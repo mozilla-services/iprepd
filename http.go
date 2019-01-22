@@ -44,6 +44,7 @@ func newRouter() *mux.Router {
 	r.HandleFunc("/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpDeleteReputation)).Methods("DELETE")
 	r.HandleFunc("/violations/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpPutViolation)).Methods("PUT")
 	r.HandleFunc("/violations", auth(httpPutViolations)).Methods("PUT")
+	r.HandleFunc("/dump", auth(httpGetAllReputation)).Methods("GET")
 
 	return r
 }
@@ -67,6 +68,27 @@ func httpHeartbeat(w http.ResponseWriter, r *http.Request) {
 
 func httpGetViolations(w http.ResponseWriter, r *http.Request) {
 	buf, err := json.Marshal(sruntime.cfg.Violations)
+	if err != nil {
+		log.Warnf(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(buf)
+}
+
+func httpGetAllReputation(w http.ResponseWriter, r *http.Request) {
+	allRep, err := repDump()
+	if err != nil {
+		if err == redis.Nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		log.Warnf(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	buf, err := json.Marshal(allRep)
 	if err != nil {
 		log.Warnf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

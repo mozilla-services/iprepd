@@ -13,6 +13,10 @@ type redisLink struct {
 	readClients []*redis.Client
 }
 
+func (r *redisLink) keys(pattern string) *redis.StringSliceCmd {
+	return r.master.Keys(pattern)
+}
+
 func (r *redisLink) del(k ...string) *redis.IntCmd {
 	return r.master.Del(k...)
 }

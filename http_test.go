@@ -110,6 +110,35 @@ func TestHandlers(t *testing.T) {
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 
+	// dump reputation
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/dump", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	var reputations []Reputation
+	err = json.Unmarshal(buf, &reputations)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(reputations))
+	c := 0
+	for _, rep := range reputations {
+		if rep.IP == "192.168.2.20" {
+			c += 1
+			assert.Equal(t, "192.168.2.20", rep.IP)
+			assert.Equal(t, 25, rep.Reputation)
+		}
+		if rep.IP == "192.168.0.1" {
+			c += 1
+			assert.Equal(t, "192.168.0.1", rep.IP)
+			assert.Equal(t, 50, rep.Reputation)
+		}
+		assert.Equal(t, false, rep.Reviewed)
+	}
+	assert.Equal(t, 2, c)
+
 	// delete entry
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("DELETE", "/192.168.2.20", nil)

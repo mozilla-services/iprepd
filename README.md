@@ -114,6 +114,23 @@ error will be logged.
 ]
 ```
 
+#### GET /dump
+
+Returns all reputation entries.
+
+**Note: This makes use of the [KEYS](https://redis.io/commands/keys) redis command, which is known to be very slow. Use with care.**
+
+##### Response body
+
+```json
+[
+  {"ip": "10.0.0.1", "reputation": 75, "reviewed": false, "lastupdated": "2018-04-23T18:25:43.511Z"},
+  {"ip": "10.0.0.2", "reputation": 50, "reviewed": false, "lastupdated": "2018-04-23T18:31:27.457Z"},
+  {"ip": "10.0.20.2", "reputation": 25, "reviewed": false, "lastupdated": "2018-04-23T17:22:42.230Z"},
+]
+```
+
+
 #### GET /\_\_heartbeat\_\_
 
 Service heartbeat endpoint.

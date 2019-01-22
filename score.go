@@ -108,3 +108,25 @@ func repDelete(ipstr string) (err error) {
 	_, err = sruntime.redis.del(ipstr).Result()
 	return
 }
+
+func repDump() (ret []Reputation, err error) {
+	keys, err := sruntime.redis.keys("*").Result()
+	if err != nil {
+		return
+	}
+
+	for _, ip := range keys {
+		buf, err := sruntime.redis.get(ip)
+		if err != nil {
+			return ret, err
+		}
+		reputation := Reputation{}
+		err = json.Unmarshal(buf, &reputation)
+		if err != nil {
+			return ret, err
+		}
+		ret = append(ret, reputation)
+	}
+
+	return
+}
