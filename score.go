@@ -27,7 +27,7 @@ type Reputation struct {
 	// current time has passed the time indicated by DecayAfter. This can be used
 	// to for example enforce a mandatory minimum reputation decrease for an address
 	// for a set period of time.
-	DecayAfter time.Time `json:"decayafter"`
+	DecayAfter time.Time `json:"decayafter,omitempty"`
 }
 
 // Validate performs validation and normalization of a Reputation type.
