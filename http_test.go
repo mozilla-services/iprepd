@@ -235,6 +235,27 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, 85, r.Reputation)
 	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
 
+	// apply suppression that is greater than what is currently configured but with a bad violation
+	// name, should not change entry
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"unknown_violation5\", \"suppress_recovery\":99999}"
+	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.6.1", r.IP)
+	assert.Equal(t, 85, r.Reputation)
+	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
+
 	// put violation with bad recovery suppression
 	recorder = httptest.NewRecorder()
 	buf2 = "{\"ip\": \"192.168.7.1\", \"violation\": \"violation1\",\"suppress_recovery\":999999999}"
