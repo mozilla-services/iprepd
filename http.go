@@ -36,6 +36,7 @@ func mwHandler(h http.Handler) http.Handler {
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("Content-Security-Policy",
 			"default-src 'none'; frame-ancestors 'none'; report-uri /__cspreport__")
+		w.Header().Add("Strict-Transport-Security", "max-age=31536000")
 		h.ServeHTTP(w, r)
 	})
 }
