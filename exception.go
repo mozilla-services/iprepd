@@ -16,6 +16,7 @@ import (
 
 var activeTree *iptree.IPTree
 var treeLock sync.Mutex
+var isExceptionUpdate bool = false
 
 type awsIPRanges struct {
 	Prefixes []struct {
@@ -28,6 +29,14 @@ const awsIPRangeURL = "https://ip-ranges.amazonaws.com/ip-ranges.json"
 func startExceptions() {
 	for {
 		loadExceptions()
+
+		// If this was the first exception load, send a note to the main thread
+		// to indicate the API can begin processing requests
+		if !isExceptionUpdate {
+			sruntime.exceptionsLoaded <- true
+			isExceptionUpdate = true
+		}
+
 		time.Sleep(time.Hour)
 	}
 }
@@ -83,6 +92,7 @@ func loadExceptions() {
 	treeLock.Lock()
 	activeTree = t
 	treeLock.Unlock()
+
 	log.Info("completed exception refresh")
 }
 
