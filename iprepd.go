@@ -11,9 +11,10 @@ import (
 )
 
 type serverRuntime struct {
-	cfg             serverCfg
-	redis           redisLink
-	versionResponse []byte
+	cfg              serverCfg
+	redis            redisLink
+	versionResponse  []byte
+	exceptionsLoaded chan bool
 }
 
 type serverCfg struct {
@@ -91,6 +92,7 @@ func StartDaemon(confpath string) {
 	log.Infof("starting daemon")
 
 	var err error
+	sruntime.exceptionsLoaded = make(chan bool, 1)
 	sruntime.cfg, err = loadCfg(confpath)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -104,6 +106,12 @@ func StartDaemon(confpath string) {
 		log.Warnf(err.Error())
 	}
 	go startExceptions()
+	select {
+	case <-sruntime.exceptionsLoaded:
+		log.Infof("initial exception load completed, starting API")
+	case <-time.After(5 * time.Second):
+		log.Fatalf("initial exception load timed out")
+	}
 	err = startAPI()
 	if err != nil {
 		log.Fatalf(err.Error())
