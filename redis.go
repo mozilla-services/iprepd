@@ -1,6 +1,7 @@
 package iprepd
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -47,6 +48,15 @@ func (r *redisLink) set(k string, v interface{}, e time.Duration) *redis.StatusC
 	return r.master.Set(k, v, e)
 }
 
+func instrumentRedisCmd(old func(cmd redis.Cmder) error) func(cmd redis.Cmder) error {
+	return func(cmd redis.Cmder) error {
+		s := time.Now()
+		err := old(cmd)
+		sruntime.statsd.Timing(fmt.Sprintf("redis.%s.timing", cmd.Name()), time.Since(s))
+		return err
+	}
+}
+
 func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 	ret.master = redis.NewClient(&redis.Options{
 		Addr:         cfg.Redis.Addr,
@@ -55,6 +65,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 		WriteTimeout: time.Millisecond * time.Duration(cfg.Redis.WriteTimeout),
 		DialTimeout:  time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
 	})
+	ret.master.WrapProcess(instrumentRedisCmd)
 	_, err = ret.ping().Result()
 	if err != nil {
 		return
@@ -72,6 +83,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 			ReadTimeout: time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
 			DialTimeout: time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
 		})
+		y.WrapProcess(instrumentRedisCmd)
 		ret.readClients = append(ret.readClients, y)
 	}
 	// Also use the master for reads

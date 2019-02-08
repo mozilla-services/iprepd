@@ -70,3 +70,6 @@ exceptions:
 # request to the /__version__ endpoint. If the file isn't found a warning will be printed
 # in the log and the daemon will not return any data at this endpoint.
 versionresponse: ./version.json
+# statsd address for metrics. To disable metrics collection, simply delete the below section.
+statsd:
+  addr: "127.0.0.1:8125"

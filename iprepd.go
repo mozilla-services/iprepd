@@ -15,6 +15,7 @@ type serverRuntime struct {
 	redis            redisLink
 	versionResponse  []byte
 	exceptionsLoaded chan bool
+	statsd           *statsdClient
 }
 
 type serverCfg struct {
@@ -41,6 +42,9 @@ type serverCfg struct {
 		AWS  bool
 	}
 	VersionResponse string
+	Statsd          struct {
+		Addr string
+	}
 }
 
 func (cfg *serverCfg) validate() error {
@@ -94,6 +98,10 @@ func StartDaemon(confpath string) {
 	var err error
 	sruntime.exceptionsLoaded = make(chan bool, 1)
 	sruntime.cfg, err = loadCfg(confpath)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	sruntime.statsd, err = newStatsdClient(sruntime.cfg)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

@@ -32,6 +32,10 @@ func (v *ViolationRequest) Validate() error {
 
 func mwHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s := time.Now()
+		defer func() {
+			sruntime.statsd.Timing("http.timing", time.Since(s))
+		}()
 		w.Header().Add("X-Frame-Options", "DENY")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("Content-Security-Policy",
@@ -111,6 +115,10 @@ func httpGetAllReputation(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpGetReputation(w http.ResponseWriter, r *http.Request) {
+	s := time.Now()
+	defer func() {
+		sruntime.statsd.Timing("http.get_reputation.timing", time.Since(s))
+	}()
 	ipstr := mux.Vars(r)["ip"]
 	if net.ParseIP(ipstr) == nil {
 		w.WriteHeader(http.StatusBadRequest)
