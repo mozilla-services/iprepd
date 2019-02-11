@@ -26,6 +26,7 @@ type serverCfg struct {
 		WriteTimeout int
 		DialTimeout  int
 		MaxPoolSize  int
+		MinIdleConn  int
 	}
 	Auth struct {
 		DisableAuth bool
@@ -56,6 +57,9 @@ func (cfg *serverCfg) validate() error {
 	}
 	if cfg.Redis.DialTimeout == 0 {
 		cfg.Redis.DialTimeout = 250
+	}
+	if cfg.Redis.MinIdleConn == 0 {
+		cfg.Redis.MinIdleConn = 20
 	}
 	return nil
 }

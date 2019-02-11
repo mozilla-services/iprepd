@@ -17,6 +17,10 @@ redis:
   # manually specify maximum pool size.
   # https://godoc.org/github.com/go-redis/redis#Options
   #maxpoolsize: 0
+  # The minimum number of idle connections to try to keep open with redis. If 0, the value will
+  # default to 20. If the maximum pool size is less than 20, it will default to the entire pool
+  # size.
+  #minidleconn: 0
 auth:
   # Configure any Hawk credentials here. Each credential should be specified as a key/value
   # pair, where the key is the Hawk ID and the value is the secret.
