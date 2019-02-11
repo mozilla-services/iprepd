@@ -54,6 +54,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 		ReadTimeout:  time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
 		WriteTimeout: time.Millisecond * time.Duration(cfg.Redis.WriteTimeout),
 		DialTimeout:  time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
+		PoolSize:     cfg.Redis.MaxPoolSize,
 	})
 	_, err = ret.ping().Result()
 	if err != nil {
@@ -71,6 +72,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 			DB:          0,
 			ReadTimeout: time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
 			DialTimeout: time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
+			PoolSize:    cfg.Redis.MaxPoolSize,
 		})
 		ret.readClients = append(ret.readClients, y)
 	}

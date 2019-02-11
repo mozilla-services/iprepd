@@ -25,6 +25,7 @@ type serverCfg struct {
 		ReadTimeout  int
 		WriteTimeout int
 		DialTimeout  int
+		MaxPoolSize  int
 	}
 	Auth struct {
 		DisableAuth bool

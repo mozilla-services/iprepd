@@ -13,6 +13,10 @@ redis:
   readtimeout: 100
   writetimeout: 100
   dialtimeout: 250
+  # If 0, use go-redis default maximum client pool size (10 * runtime.NumCPU()). Set to non-zero to
+  # manually specify maximum pool size.
+  # https://godoc.org/github.com/go-redis/redis#Options
+  #maxpoolsize: 0
 auth:
   # Configure any Hawk credentials here. Each credential should be specified as a key/value
   # pair, where the key is the Hawk ID and the value is the secret.
