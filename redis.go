@@ -1,6 +1,7 @@
 package iprepd
 
 import (
+	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
@@ -48,6 +49,15 @@ func (r *redisLink) set(k string, v interface{}, e time.Duration) *redis.StatusC
 	return r.master.Set(k, v, e)
 }
 
+func instrumentRedisCmd(old func(cmd redis.Cmder) error) func(cmd redis.Cmder) error {
+	return func(cmd redis.Cmder) error {
+		s := time.Now()
+		err := old(cmd)
+		sruntime.statsd.Timing(fmt.Sprintf("redis.%s.timing", cmd.Name()), time.Since(s))
+		return err
+	}
+}
+
 func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 	minIdleConns := cfg.Redis.MinIdleConn
 	if cfg.Redis.MaxPoolSize != 0 && cfg.Redis.MaxPoolSize < 20 {
@@ -65,6 +75,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 		PoolSize:     cfg.Redis.MaxPoolSize,
 		MinIdleConns: minIdleConns,
 	})
+	ret.master.WrapProcess(instrumentRedisCmd)
 	_, err = ret.ping().Result()
 	if err != nil {
 		return
@@ -84,6 +95,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 			PoolSize:     cfg.Redis.MaxPoolSize,
 			MinIdleConns: minIdleConns,
 		})
+		y.WrapProcess(instrumentRedisCmd)
 		ret.readClients = append(ret.readClients, y)
 	}
 	// Also use the master for reads

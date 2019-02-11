@@ -55,6 +55,11 @@ func TestMain(m *testing.M) {
 	if renv != "" {
 		tcfg.Redis.Addr = renv
 	}
+	sruntime.statsd, err = newStatsdClient(tcfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 	sruntime.redis, err = newRedisLink(tcfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
