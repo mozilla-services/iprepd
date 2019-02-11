@@ -10,9 +10,9 @@ redis:
   #replicas:
   #  - 127.0.0.1:7000
   # Read, write, and dial connection timeouts in ms (defaults shown).
-  readtimeout: 50
-  writetimeout: 50
-  dialtimeout: 100
+  readtimeout: 100
+  writetimeout: 100
+  dialtimeout: 250
 auth:
   # Configure any Hawk credentials here. Each credential should be specified as a key/value
   # pair, where the key is the Hawk ID and the value is the secret.

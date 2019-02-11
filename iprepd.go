@@ -48,13 +48,13 @@ func (cfg *serverCfg) validate() error {
 		cfg.VersionResponse = "./version.json"
 	}
 	if cfg.Redis.ReadTimeout == 0 {
-		cfg.Redis.ReadTimeout = 50
+		cfg.Redis.ReadTimeout = 100
 	}
 	if cfg.Redis.WriteTimeout == 0 {
-		cfg.Redis.WriteTimeout = 50
+		cfg.Redis.WriteTimeout = 100
 	}
 	if cfg.Redis.DialTimeout == 0 {
-		cfg.Redis.DialTimeout = 100
+		cfg.Redis.DialTimeout = 250
 	}
 	return nil
 }
