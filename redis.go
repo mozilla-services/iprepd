@@ -2,6 +2,7 @@ package iprepd
 
 import (
 	"math/rand"
+	"runtime"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -48,12 +49,21 @@ func (r *redisLink) set(k string, v interface{}, e time.Duration) *redis.StatusC
 }
 
 func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
+	minIdleConns := cfg.Redis.MinIdleConn
+	if cfg.Redis.MaxPoolSize != 0 && cfg.Redis.MaxPoolSize < 20 {
+		minIdleConns = cfg.Redis.MaxPoolSize
+	} else if cfg.Redis.MaxPoolSize == 0 && (10*runtime.NumCPU()) < 20 {
+		minIdleConns = 10 * runtime.NumCPU()
+	}
+
 	ret.master = redis.NewClient(&redis.Options{
 		Addr:         cfg.Redis.Addr,
 		DB:           0,
 		ReadTimeout:  time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
 		WriteTimeout: time.Millisecond * time.Duration(cfg.Redis.WriteTimeout),
 		DialTimeout:  time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
+		PoolSize:     cfg.Redis.MaxPoolSize,
+		MinIdleConns: minIdleConns,
 	})
 	_, err = ret.ping().Result()
 	if err != nil {
@@ -67,10 +77,12 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 			continue
 		}
 		y := redis.NewClient(&redis.Options{
-			Addr:        x,
-			DB:          0,
-			ReadTimeout: time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
-			DialTimeout: time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
+			Addr:         x,
+			DB:           0,
+			ReadTimeout:  time.Millisecond * time.Duration(cfg.Redis.ReadTimeout),
+			DialTimeout:  time.Millisecond * time.Duration(cfg.Redis.DialTimeout),
+			PoolSize:     cfg.Redis.MaxPoolSize,
+			MinIdleConns: minIdleConns,
 		})
 		ret.readClients = append(ret.readClients, y)
 	}

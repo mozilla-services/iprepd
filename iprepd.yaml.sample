@@ -10,9 +10,17 @@ redis:
   #replicas:
   #  - 127.0.0.1:7000
   # Read, write, and dial connection timeouts in ms (defaults shown).
-  readtimeout: 50
-  writetimeout: 50
-  dialtimeout: 100
+  readtimeout: 100
+  writetimeout: 100
+  dialtimeout: 250
+  # If 0, use go-redis default maximum client pool size (10 * runtime.NumCPU()). Set to non-zero to
+  # manually specify maximum pool size.
+  # https://godoc.org/github.com/go-redis/redis#Options
+  #maxpoolsize: 0
+  # The minimum number of idle connections to try to keep open with redis. If 0, the value will
+  # default to 20. If the maximum pool size is less than 20, it will default to the entire pool
+  # size.
+  #minidleconn: 0
 auth:
   # Configure any Hawk credentials here. Each credential should be specified as a key/value
   # pair, where the key is the Hawk ID and the value is the secret.

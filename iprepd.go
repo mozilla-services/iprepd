@@ -25,6 +25,8 @@ type serverCfg struct {
 		ReadTimeout  int
 		WriteTimeout int
 		DialTimeout  int
+		MaxPoolSize  int
+		MinIdleConn  int
 	}
 	Auth struct {
 		DisableAuth bool
@@ -48,13 +50,16 @@ func (cfg *serverCfg) validate() error {
 		cfg.VersionResponse = "./version.json"
 	}
 	if cfg.Redis.ReadTimeout == 0 {
-		cfg.Redis.ReadTimeout = 50
+		cfg.Redis.ReadTimeout = 100
 	}
 	if cfg.Redis.WriteTimeout == 0 {
-		cfg.Redis.WriteTimeout = 50
+		cfg.Redis.WriteTimeout = 100
 	}
 	if cfg.Redis.DialTimeout == 0 {
-		cfg.Redis.DialTimeout = 100
+		cfg.Redis.DialTimeout = 250
+	}
+	if cfg.Redis.MinIdleConn == 0 {
+		cfg.Redis.MinIdleConn = 20
 	}
 	return nil
 }

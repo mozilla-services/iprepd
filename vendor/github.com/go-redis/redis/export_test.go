@@ -3,7 +3,7 @@ package redis
 import (
 	"fmt"
 	"net"
-	"time"
+	"strings"
 
 	"github.com/go-redis/redis/internal/hashtag"
 	"github.com/go-redis/redis/internal/pool"
@@ -15,14 +15,6 @@ func (c *baseClient) Pool() pool.Pooler {
 
 func (c *PubSub) SetNetConn(netConn net.Conn) {
 	c.cn = pool.NewConn(netConn)
-}
-
-func (c *PubSub) ReceiveMessageTimeout(timeout time.Duration) (*Message, error) {
-	return c.receiveMessage(timeout)
-}
-
-func (c *ClusterClient) GetState() (*clusterState, error) {
-	return c.state.Get()
 }
 
 func (c *ClusterClient) LoadState() (*clusterState, error) {
@@ -49,7 +41,7 @@ func (c *ClusterClient) Nodes(key string) ([]*clusterNode, error) {
 	}
 
 	slot := hashtag.Slot(key)
-	nodes := state.slots[slot]
+	nodes := state.slotNodes(slot)
 	if len(nodes) != 2 {
 		return nil, fmt.Errorf("slot=%d does not have enough nodes: %v", slot, nodes)
 	}
@@ -63,4 +55,28 @@ func (c *ClusterClient) SwapNodes(key string) error {
 	}
 	nodes[0], nodes[1] = nodes[1], nodes[0]
 	return nil
+}
+
+func (state *clusterState) IsConsistent() bool {
+	if len(state.Masters) < 3 {
+		return false
+	}
+	for _, master := range state.Masters {
+		s := master.Client.Info("replication").Val()
+		if !strings.Contains(s, "role:master") {
+			return false
+		}
+	}
+
+	if len(state.Slaves) < 3 {
+		return false
+	}
+	for _, slave := range state.Slaves {
+		s := slave.Client.Info("replication").Val()
+		if !strings.Contains(s, "role:slave") {
+			return false
+		}
+	}
+
+	return true
 }
