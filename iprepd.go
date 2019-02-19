@@ -1,8 +1,10 @@
 package iprepd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -92,6 +94,15 @@ func loadCfg(confpath string) (ret serverCfg, err error) {
 	err = yaml.Unmarshal(buf, &ret)
 	if err != nil {
 		return
+	}
+	// prefer STATSD_HOST env var over config file (#13)
+	statsdHost := os.Getenv("STATSD_HOST")
+	if statsdHost != "" {
+		statsdPort := os.Getenv("STATSD_PORT")
+		if statsdPort == "" {
+			statsdPort = "8125"
+		}
+		ret.Statsd.Addr = fmt.Sprintf("%s:%s", statsdHost, statsdPort)
 	}
 	return ret, ret.validate()
 }
