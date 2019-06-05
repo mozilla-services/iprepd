@@ -33,18 +33,18 @@ auth:
     testuser: test
   # Set disableauth to true to turn of all authentication.
   disableauth: false
-# Configure violations that can be used when submitting a violation for an IP address
+# Configure violations that can be used when submitting a violation for an object
 # in this section.
 #
 # name: The name of a violation as would be submitted in a request to the API.
 ##
 # penalty: The number of points this violation will decrease the reputation for
-#          an IP address by.
+#          an object by.
 #
 # decreaselimit: The lower limit by which a given violation will decrease the reputation
-#                for a given IP address to. For example, if a violation has a penalty of 25
+#                for a given object to. For example, if a violation has a penalty of 25
 #                and a decreaselimit of 50, the first time this violation is applied to an
-#                IP address it will result in a reputation of 75. The second time, a reputation
+#                object it will result in a reputation of 75. The second time, a reputation
 #                score of 50. And subsequent violations will not lower the reputation further.
 violations:
   - name: test
@@ -53,18 +53,21 @@ violations:
   - name: test2
     penalty: 5
     decreaselimit: 25
-# The decay configuration controls how the reputation for an IP address recovers back to
+# The decay configuration controls how the reputation for an object recovers back to
 # 100 over time.
 #
-# points: The number of points added to the reputation of an IP address every interval.
+# points: The number of points added to the reputation of an object every interval.
 #
 # interval: How often the points are added to the reputation.
 decay:
   points: 1
   interval: 1s
 # Exceptions control IP address exceptions in iprepd. Any IP that matches an exception will
-# not be returned by ipred if it is requested (e.g., it will effectively have a reputation
+# not be returned by iprepd if it is requested (e.g., it will effectively have a reputation
 # score of 100). Useful for exempting internal IP addresses.
+#
+# Note the these exceptions only apply to requests for "ip" type objects, either through
+# the legacy API endpoints or object requests of type "ip".
 exceptions:
   # List any files that contain a list of CIDR subnets, one per line, that are loaded as
   # exceptions.

@@ -1,6 +1,7 @@
 package iprepd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -17,7 +18,8 @@ func baseTest() error {
 	sruntime.cfg.Decay.Points = 0
 	sruntime.cfg.Decay.Interval = time.Minute
 	r := Reputation{
-		IP:         "192.168.0.1",
+		Object:     "192.168.0.1",
+		Type:       "ip",
 		Reputation: 50,
 	}
 	err = r.set()
@@ -25,10 +27,26 @@ func baseTest() error {
 		return err
 	}
 	r = Reputation{
-		IP:         "10.0.0.1",
+		Object:     "10.0.0.1",
+		Type:       "ip",
 		Reputation: 25,
 	}
 	err = r.set()
+	if err != nil {
+		return err
+	}
+	// Add a legacy format reputation entry for testing, needs to be added
+	// manually to bypass the insertion validator
+	r = Reputation{
+		IP:          "254.254.254.254",
+		Reputation:  40,
+		LastUpdated: time.Now().UTC(),
+	}
+	buf, err := json.Marshal(r)
+	if err != nil {
+		return err
+	}
+	err = sruntime.redis.set(r.IP, buf, time.Hour*24).Err()
 	if err != nil {
 		return err
 	}
