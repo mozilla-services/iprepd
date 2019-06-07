@@ -46,7 +46,7 @@ func baseTest() error {
 	if err != nil {
 		return err
 	}
-	err = sruntime.redis.set(r.IP, buf, time.Hour*24).Err()
+	err = sruntime.redis.set(r.IP, buf, time.Hour*336).Err()
 	if err != nil {
 		return err
 	}

@@ -83,7 +83,7 @@ func (r *Reputation) set() error {
 	if err != nil {
 		return err
 	}
-	return sruntime.redis.set(key, buf, time.Hour*24).Err()
+	return sruntime.redis.set(key, buf, time.Hour*336).Err()
 }
 
 func (r *Reputation) applyViolation(v string) (found bool, err error) {
