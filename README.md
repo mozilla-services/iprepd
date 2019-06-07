@@ -102,7 +102,7 @@ to decay back to 100. If this setting is not included, the reputation will begin
 immediately. If the violation is being applied to an existing entry, the `suppress_recovery` field
 will only be applied if the existing entry has no current recovery suppression, or the specified
 recovery suppression time frame would result in a time in the future beyond which the entry
-currently has. If `suppress_recovery` is included it must be less than `259200` (72 hours).
+currently has. If `suppress_recovery` is included it must be less than `1209600` (14 days).
 
 ##### Request body
 

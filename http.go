@@ -64,7 +64,7 @@ func (v *ViolationRequest) Validate() error {
 	if v.Type == "" {
 		return fmt.Errorf("violation request missing required field type")
 	}
-	if v.SuppressRecovery > 259200 {
+	if v.SuppressRecovery > 1209600 {
 		return fmt.Errorf("invalid suppress recovery value %v", v.SuppressRecovery)
 	}
 	return nil
