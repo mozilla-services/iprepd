@@ -198,25 +198,25 @@ func TestHandlers(t *testing.T) {
 	c := 0
 	for _, rep := range reputations {
 		if rep.Object == "192.168.2.20" {
-			c += 1
+			c++
 			assert.Equal(t, "192.168.2.20", rep.Object)
 			assert.Equal(t, "ip", rep.Type)
 			assert.Equal(t, 25, rep.Reputation)
 		}
 		if rep.Object == "192.168.0.1" {
-			c += 1
+			c++
 			assert.Equal(t, "192.168.0.1", rep.Object)
 			assert.Equal(t, "ip", rep.Type)
 			assert.Equal(t, 50, rep.Reputation)
 		}
 		if rep.Object == "riker@mozilla.com" {
-			c += 1
+			c++
 			assert.Equal(t, "riker@mozilla.com", rep.Object)
 			assert.Equal(t, "email", rep.Type)
 			assert.Equal(t, 50, rep.Reputation)
 		}
 		if rep.IP == "254.254.254.254" {
-			c += 1
+			c++
 			assert.Equal(t, "254.254.254.254", rep.IP)
 			assert.Equal(t, "", rep.Object)
 			assert.Equal(t, "", rep.Type)

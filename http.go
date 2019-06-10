@@ -98,14 +98,14 @@ func newRouter() *mux.Router {
 	// To maintain compatibility with previous API versions, wrap legacy API
 	// calls to add the type field and route to the correct handler
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIpRequest(httpGetReputation))).Methods("GET")
+		auth(wrapLegacyIPRequest(httpGetReputation))).Methods("GET")
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIpRequest(httpPutReputation))).Methods("PUT")
+		auth(wrapLegacyIPRequest(httpPutReputation))).Methods("PUT")
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIpRequest(httpDeleteReputation))).Methods("DELETE")
+		auth(wrapLegacyIPRequest(httpDeleteReputation))).Methods("DELETE")
 	r.HandleFunc("/violations/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIpRequest(httpPutViolation))).Methods("PUT")
-	r.HandleFunc("/violations", auth(wrapLegacyIpRequest(httpPutViolations))).Methods("PUT")
+		auth(wrapLegacyIPRequest(httpPutViolation))).Methods("PUT")
+	r.HandleFunc("/violations", auth(wrapLegacyIPRequest(httpPutViolations))).Methods("PUT")
 
 	r.HandleFunc("/violations", auth(httpGetViolations)).Methods("GET")
 	r.HandleFunc("/dump", auth(httpGetAllReputation)).Methods("GET")
@@ -122,7 +122,7 @@ func startAPI() error {
 	return http.ListenAndServe(sruntime.cfg.Listen, mwHandler(newRouter()))
 }
 
-func wrapLegacyIpRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+func wrapLegacyIPRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := mux.Vars(r)
 		m["type"] = "ip"

@@ -16,7 +16,7 @@ import (
 
 var activeTree *iptree.IPTree
 var treeLock sync.Mutex
-var isExceptionUpdate bool = false
+var isExceptionUpdate = false
 
 type awsIPRanges struct {
 	Prefixes []struct {

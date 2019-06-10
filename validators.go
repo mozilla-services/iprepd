@@ -7,11 +7,11 @@ import (
 )
 
 var validators = map[string]func(string) error{
-	"ip":    validateTypeIp,
+	"ip":    validateTypeIP,
 	"email": validateTypeEmail,
 }
 
-func validateTypeIp(val string) error {
+func validateTypeIP(val string) error {
 	if net.ParseIP(val) == nil {
 		return fmt.Errorf("invalid ip format %v", val)
 	}
