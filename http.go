@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"time"
 
@@ -14,17 +13,58 @@ import (
 )
 
 // ViolationRequest represents the structure used to apply a violation to a given
-// IP address. This structure is used as the basis for unmarshaling requests to
+// object. This structure is used as the basis for unmarshaling requests to
 // violation handlers in the API.
 type ViolationRequest struct {
-	IP               string `json:"ip"`
-	Violation        string `json:"violation"`
-	SuppressRecovery int    `json:"suppress_recovery,omitempty"`
+	// The violation name to be applied
+	Violation string `json:"violation,omitempty"`
+
+	// The object the violation should be applied to.
+	Object string `json:"object,omitempty"`
+
+	// The type of object (e.g., ip).
+	Type string `json:"type,omitempty"`
+
+	// An optional recovery suppression value in seconds. If set, it indicates the
+	// number of seconds which must pass before the reputation for the object will
+	// begin to recover.
+	SuppressRecovery int `json:"suppress_recovery,omitempty"`
+
+	// The IP field supports reverse compatibility with older clients. It is essentially
+	// the same thing as passing an IP address in the object field, with a type set to
+	// ip.
+	IP string `json:"ip,omitempty"`
+}
+
+// Fixup is used to convert legacy format violations
+func (v *ViolationRequest) Fixup(typestr string) {
+	// Only apply fixup to ip type requests
+	if typestr != "ip" {
+		return
+	}
+	// If the type field is not set, set it to the type specified in the request
+	// path
+	if v.Type == "" {
+		v.Type = typestr
+	}
+	// If object is not set but the IP field is set, use that as the object
+	if v.Object == "" && v.IP != "" {
+		v.Object = v.IP
+	}
 }
 
 // Validate performs validation of a ViolationRequest type
 func (v *ViolationRequest) Validate() error {
-	if v.SuppressRecovery > 259200 {
+	if v.Violation == "" {
+		return fmt.Errorf("violation request missing required field violation")
+	}
+	if v.Object == "" {
+		return fmt.Errorf("violation request missing required field object")
+	}
+	if v.Type == "" {
+		return fmt.Errorf("violation request missing required field type")
+	}
+	if v.SuppressRecovery > 1209600 {
 		return fmt.Errorf("invalid suppress recovery value %v", v.SuppressRecovery)
 	}
 	return nil
@@ -48,25 +88,72 @@ func mwHandler(h http.Handler) http.Handler {
 func newRouter() *mux.Router {
 	r := mux.NewRouter().StrictSlash(true)
 
-	// unauth endpoints
+	// Unauthenticated endpoints
 	r.HandleFunc("/__lbheartbeat__", httpHeartbeat).Methods("GET")
 	r.HandleFunc("/__heartbeat__", httpHeartbeat).Methods("GET")
 	r.HandleFunc("/__version__", httpVersion).Methods("GET")
 
-	// auth endpoints
+	// Legacy IP reputation endpoints
+	//
+	// To maintain compatibility with previous API versions, wrap legacy API
+	// calls to add the type field and route to the correct handler
+	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
+		auth(wrapLegacyIpRequest(httpGetReputation))).Methods("GET")
+	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
+		auth(wrapLegacyIpRequest(httpPutReputation))).Methods("PUT")
+	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
+		auth(wrapLegacyIpRequest(httpDeleteReputation))).Methods("DELETE")
+	r.HandleFunc("/violations/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
+		auth(wrapLegacyIpRequest(httpPutViolation))).Methods("PUT")
+	r.HandleFunc("/violations", auth(wrapLegacyIpRequest(httpPutViolations))).Methods("PUT")
+
 	r.HandleFunc("/violations", auth(httpGetViolations)).Methods("GET")
-	r.HandleFunc("/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpGetReputation)).Methods("GET")
-	r.HandleFunc("/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpPutReputation)).Methods("PUT")
-	r.HandleFunc("/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpDeleteReputation)).Methods("DELETE")
-	r.HandleFunc("/violations/{ip:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}", auth(httpPutViolation)).Methods("PUT")
-	r.HandleFunc("/violations", auth(httpPutViolations)).Methods("PUT")
 	r.HandleFunc("/dump", auth(httpGetAllReputation)).Methods("GET")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpGetReputation)).Methods("GET")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpPutReputation)).Methods("PUT")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpDeleteReputation)).Methods("DELETE")
+	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}/{value}", auth(httpPutViolation)).Methods("PUT")
+	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}", auth(httpPutViolations)).Methods("PUT")
 
 	return r
 }
 
 func startAPI() error {
 	return http.ListenAndServe(sruntime.cfg.Listen, mwHandler(newRouter()))
+}
+
+func wrapLegacyIpRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m := mux.Vars(r)
+		m["type"] = "ip"
+		mux.SetURLVars(r, m)
+		rf(w, r)
+	}
+}
+
+func hasValidType(r *http.Request) error {
+	t := mux.Vars(r)["type"]
+	_, ok := validators[t]
+	if !ok {
+		return fmt.Errorf("type %v is invalid", t)
+	}
+	return nil
+}
+
+func verifyTypeAndValue(r *http.Request) (t string, v string, err error) {
+	err = hasValidType(r)
+	if err != nil {
+		return t, v, err
+	}
+	t = mux.Vars(r)["type"]
+	if t == "" {
+		return t, v, fmt.Errorf("type was not set")
+	}
+	v = mux.Vars(r)["value"]
+	if v == "" {
+		return t, v, fmt.Errorf("value was not set")
+	}
+	return t, v, validateType(t, v)
 }
 
 func httpVersion(w http.ResponseWriter, r *http.Request) {
@@ -119,16 +206,21 @@ func httpGetReputation(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		sruntime.statsd.Timing("http.get_reputation.timing", time.Since(s))
 	}()
-	ipstr := mux.Vars(r)["ip"]
-	if net.ParseIP(ipstr) == nil {
+	typestr, valstr, err := verifyTypeAndValue(r)
+	if err != nil {
+		log.Warnf(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if isException(ipstr) {
-		w.WriteHeader(http.StatusNotFound)
-		return
+	// If the request is for an IP type object, consult the exception list. Currently
+	// exceptions only apply to IP objects.
+	if typestr == "ip" {
+		if isException(valstr) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 	}
-	rep, err := repGet(ipstr)
+	rep, err := repGet(typestr, valstr)
 	if err != nil {
 		if err == redis.Nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -149,8 +241,8 @@ func httpGetReputation(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpPutReputation(w http.ResponseWriter, r *http.Request) {
-	ipstr := mux.Vars(r)["ip"]
-	if net.ParseIP(ipstr) == nil {
+	typestr, valstr, err := verifyTypeAndValue(r)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -167,8 +259,9 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// Force IP field to match value specified in request path
-	rep.IP = ipstr
+	// Force object field and type to match value specified in request path
+	rep.Object = valstr
+	rep.Type = typestr
 	err = rep.Validate()
 	if err != nil {
 		log.Warnf(err.Error())
@@ -181,20 +274,25 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	exc := false
+	if rep.Type == "ip" {
+		exc = isException(rep.Object)
+	}
 	log.WithFields(log.Fields{
-		"ip":         rep.IP,
+		"object":     rep.Object,
+		"type":       rep.Type,
 		"reputation": rep.Reputation,
-		"exception":  isException(rep.IP),
+		"exception":  exc,
 	}).Info("reputation set")
 }
 
 func httpDeleteReputation(w http.ResponseWriter, r *http.Request) {
-	ipstr := mux.Vars(r)["ip"]
-	if net.ParseIP(ipstr) == nil {
+	typestr, valstr, err := verifyTypeAndValue(r)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err := repDelete(ipstr)
+	err = repDelete(typestr, valstr)
 	if err != nil {
 		log.Warnf(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -203,8 +301,8 @@ func httpDeleteReputation(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpPutViolation(w http.ResponseWriter, r *http.Request) {
-	ipstr := mux.Vars(r)["ip"]
-	if net.ParseIP(ipstr) == nil {
+	typestr, valstr, err := verifyTypeAndValue(r)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -221,11 +319,20 @@ func httpPutViolation(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	v.IP = ipstr
-	httpPutViolationsInner(w, r, []ViolationRequest{v})
+	// Force object field and type to match value specified in request path
+	v.Object = valstr
+	v.Type = typestr
+	httpPutViolationsInner(w, r, typestr, []ViolationRequest{v})
 }
 
 func httpPutViolations(w http.ResponseWriter, r *http.Request) {
+	// We only have a type to verify here
+	err := hasValidType(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	typestr := mux.Vars(r)["type"]
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Warnf(err.Error())
@@ -239,11 +346,14 @@ func httpPutViolations(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	httpPutViolationsInner(w, r, vs)
+	httpPutViolationsInner(w, r, typestr, vs)
 }
 
-func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []ViolationRequest) {
+func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, typestr string, vs []ViolationRequest) {
 	for _, v := range vs {
+		v.Fixup(typestr)
+		// Force type field to match value specified in request path
+		v.Type = typestr
 		err := v.Validate()
 		if err != nil {
 			log.Warnf(err.Error())
@@ -251,10 +361,21 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 			return
 		}
 
-		rep, err := repGet(v.IP)
+		rep, err := repGet(typestr, v.Object)
 		if err == redis.Nil {
-			rep = Reputation{IP: v.IP, Reputation: 100}
+			rep = Reputation{
+				Object:     v.Object,
+				Type:       typestr,
+				Reputation: 100,
+			}
 		} else if err != nil {
+			log.Warnf(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = rep.Validate()
+		if err != nil {
 			log.Warnf(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -279,7 +400,8 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 				// just log it
 				log.WithFields(log.Fields{
 					"violation": v.Violation,
-					"ip":        v.IP,
+					"object":    v.Object,
+					"type":      v.Type,
 				}).Warn("ignoring unknown violation")
 				continue
 			}
@@ -293,13 +415,18 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, vs []Violati
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		exc := false
+		if rep.Type == "ip" {
+			exc = isException(rep.Object)
+		}
 		log.WithFields(log.Fields{
 			"violation":           v.Violation,
-			"ip":                  rep.IP,
+			"object":              rep.Object,
+			"type":                rep.Type,
 			"reputation":          rep.Reputation,
 			"decay_after":         rep.DecayAfter,
 			"original_reputation": origRep,
-			"exception":           isException(rep.IP),
+			"exception":           exc,
 		}).Info("violation applied")
 	}
 }
