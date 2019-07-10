@@ -129,6 +129,7 @@ error will be logged.
 	{"object": "10.0.0.2", "type": "ip", "violation": "violation1"},
 	{"object": "10.0.0.3", "type": "ip", "violation": "violation2"}
 ]
+```
 
 #### GET /violations
 
