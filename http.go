@@ -98,22 +98,22 @@ func newRouter() *mux.Router {
 	// To maintain compatibility with previous API versions, wrap legacy API
 	// calls to add the type field and route to the correct handler
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpGetReputation))).Methods("GET")
+		auth(wrapLegacyIPRequest(httpGetReputation), false)).Methods("GET")
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpPutReputation))).Methods("PUT")
+		auth(wrapLegacyIPRequest(httpPutReputation), true)).Methods("PUT")
 	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpDeleteReputation))).Methods("DELETE")
+		auth(wrapLegacyIPRequest(httpDeleteReputation), true)).Methods("DELETE")
 	r.HandleFunc("/violations/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpPutViolation))).Methods("PUT")
-	r.HandleFunc("/violations", auth(wrapLegacyIPRequest(httpPutViolations))).Methods("PUT")
+		auth(wrapLegacyIPRequest(httpPutViolation), true)).Methods("PUT")
+	r.HandleFunc("/violations", auth(wrapLegacyIPRequest(httpPutViolations), true)).Methods("PUT")
 
-	r.HandleFunc("/violations", auth(httpGetViolations)).Methods("GET")
-	r.HandleFunc("/dump", auth(httpGetAllReputation)).Methods("GET")
-	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpGetReputation)).Methods("GET")
-	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpPutReputation)).Methods("PUT")
-	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpDeleteReputation)).Methods("DELETE")
-	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}/{value}", auth(httpPutViolation)).Methods("PUT")
-	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}", auth(httpPutViolations)).Methods("PUT")
+	r.HandleFunc("/violations", auth(httpGetViolations, false)).Methods("GET")
+	r.HandleFunc("/dump", auth(httpGetAllReputation, false)).Methods("GET")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpGetReputation, false)).Methods("GET")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpPutReputation, true)).Methods("PUT")
+	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpDeleteReputation, true)).Methods("DELETE")
+	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}/{value}", auth(httpPutViolation, true)).Methods("PUT")
+	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}", auth(httpPutViolations, true)).Methods("PUT")
 
 	return r
 }
