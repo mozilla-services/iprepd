@@ -108,7 +108,7 @@ func newRouter() *mux.Router {
 	r.HandleFunc("/violations", auth(wrapLegacyIPRequest(httpPutViolations), true)).Methods("PUT")
 
 	r.HandleFunc("/violations", auth(httpGetViolations, false)).Methods("GET")
-	r.HandleFunc("/dump", auth(httpGetAllReputation, false)).Methods("GET")
+	r.HandleFunc("/dump", auth(httpGetAllReputation, true)).Methods("GET")
 	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpGetReputation, false)).Methods("GET")
 	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpPutReputation, true)).Methods("PUT")
 	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpDeleteReputation, true)).Methods("DELETE")

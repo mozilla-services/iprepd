@@ -55,7 +55,7 @@ func TestAuth(t *testing.T) {
 	req.Header.Set("Authorization", "APIKey rokey1")
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusForbidden, recorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// valid hawk header
 	recorder = httptest.NewRecorder()
@@ -96,7 +96,7 @@ func TestAuth(t *testing.T) {
 	req.Header.Set("Authorization", auth.RequestHeader())
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusForbidden, recorder.Code)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// invalid hawk id
 	recorder = httptest.NewRecorder()

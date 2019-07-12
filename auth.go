@@ -30,7 +30,7 @@ func auth(rf func(http.ResponseWriter, *http.Request), needsWrite bool) func(htt
 				return
 			}
 			if needsWrite && !wr {
-				w.WriteHeader(http.StatusForbidden)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 		}
