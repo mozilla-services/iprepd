@@ -479,6 +479,24 @@ func TestHandlers(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+
+	// put violations for malformed IP
+	recorder = httptest.NewRecorder()
+	buf2 = "[{\"object\": \"192auwgibcwai.1\", \"type\": \"ip\", \"violation\": \"violation1\"}," +
+		"{\"object\": \"192.168.5.1\", \"type\": \"ip\", \"violation\": \"violation2\"}]"
+	req = httptest.NewRequest("PUT", "/violations/type/ip", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+
+	// put violations for malformed email
+	recorder = httptest.NewRecorder()
+	buf2 = "[{\"object\": \"rikermozilla.com\", \"type\": \"email\", \"violation\": \"violation1\"}," +
+		"{\"object\": \"troi@mozilla.com\", \"type\": \"email\", \"violation\": \"violation2\"}]"
+	req = httptest.NewRequest("PUT", "/violations/type/email", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 }
 
 func TestHandlersLegacy(t *testing.T) {
