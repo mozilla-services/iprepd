@@ -361,6 +361,12 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, typestr stri
 			return
 		}
 
+		if err = validateType(v.Type, v.Object); err != nil {
+			log.Warnf(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		rep, err := repGet(typestr, v.Object)
 		if err == redis.Nil {
 			rep = Reputation{
