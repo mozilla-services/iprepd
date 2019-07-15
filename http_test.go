@@ -488,6 +488,17 @@ func TestHandlers(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	var failedIpVs []ViolationRequestFailure
+	err = json.Unmarshal(buf, &failedIpVs)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(failedIpVs))
+	assert.Equal(t, "192auwgibcwai.1", failedIpVs[0].Object)
+	assert.Equal(t, "ip", failedIpVs[0].Type)
+	assert.Equal(t, "violation1", failedIpVs[0].Violation)
+	assert.Equal(t, "invalid ip format 192auwgibcwai.1", failedIpVs[0].FailureReason)
 
 	// put violations for malformed email
 	recorder = httptest.NewRecorder()
@@ -497,6 +508,17 @@ func TestHandlers(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	var failedEmailVs []ViolationRequestFailure
+	err = json.Unmarshal(buf, &failedEmailVs)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(failedEmailVs))
+	assert.Equal(t, "rikermozilla.com", failedEmailVs[0].Object)
+	assert.Equal(t, "email", failedEmailVs[0].Type)
+	assert.Equal(t, "violation1", failedEmailVs[0].Violation)
+	assert.Equal(t, "invalid email format rikermozilla.com", failedEmailVs[0].FailureReason)
 }
 
 func TestHandlersLegacy(t *testing.T) {

@@ -36,6 +36,13 @@ type ViolationRequest struct {
 	IP string `json:"ip,omitempty"`
 }
 
+// ViolationRequestFailure represents the structure used to communicate a
+// failure to apply the encapaulated ViolationRequest
+type ViolationRequestFailure struct {
+	ViolationRequest
+	FailureReason string `json:"failure_reason,omitempty"`
+}
+
 // Fixup is used to convert legacy format violations
 func (v *ViolationRequest) Fixup(typestr string) {
 	// Only apply fixup to ip type requests
@@ -322,7 +329,87 @@ func httpPutViolation(w http.ResponseWriter, r *http.Request) {
 	// Force object field and type to match value specified in request path
 	v.Object = valstr
 	v.Type = typestr
-	httpPutViolationsInner(w, r, typestr, []ViolationRequest{v})
+	if err := putViolation(typestr, v); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
+func putViolation(typestr string, v ViolationRequest) error {
+	v.Fixup(typestr)
+	// Force type field to match value specified in request path
+	v.Type = typestr
+	err := v.Validate()
+	if err != nil {
+		return err
+	}
+
+	if err = validateType(v.Type, v.Object); err != nil {
+		return err
+	}
+
+	rep, err := repGet(typestr, v.Object)
+	if err == redis.Nil {
+		rep = Reputation{
+			Object:     v.Object,
+			Type:       typestr,
+			Reputation: 100,
+		}
+	} else if err != nil {
+		return err
+	}
+
+	err = rep.Validate()
+	if err != nil {
+		return err
+	}
+
+	// If recovery suppression was specified add the correct timestamp to the reputation
+	// entry. Is suppression is already indicated, only update it if it results in a new
+	// timestamp that is beyond what the existing value is.
+	if v.SuppressRecovery > 0 {
+		nd := time.Now().UTC().Add(time.Second *
+			time.Duration(v.SuppressRecovery))
+		if rep.DecayAfter.IsZero() || rep.DecayAfter.Before(nd) {
+			rep.DecayAfter = nd
+		}
+	}
+
+	origRep := rep.Reputation
+	found, err := rep.applyViolation(v.Violation)
+	if err != nil {
+		if !found {
+			// Don't treat submitting an unknown violation as an error, instead
+			// just log it
+			log.WithFields(log.Fields{
+				"violation": v.Violation,
+				"object":    v.Object,
+				"type":      v.Type,
+			}).Warn("ignoring unknown violation")
+			return nil
+		}
+		return err
+	}
+	err = rep.set()
+	if err != nil {
+		return err
+	}
+	exc := false
+	if rep.Type == "ip" {
+		exc = isException(rep.Object)
+	}
+	log.WithFields(log.Fields{
+		"violation":           v.Violation,
+		"object":              rep.Object,
+		"type":                rep.Type,
+		"reputation":          rep.Reputation,
+		"decay_after":         rep.DecayAfter,
+		"original_reputation": origRep,
+		"exception":           exc,
+	}).Info("violation applied")
+	return nil
 }
 
 func httpPutViolations(w http.ResponseWriter, r *http.Request) {
@@ -346,93 +433,29 @@ func httpPutViolations(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	httpPutViolationsInner(w, r, typestr, vs)
-}
 
-func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, typestr string, vs []ViolationRequest) {
+	failedVs := []ViolationRequestFailure{}
+
 	for _, v := range vs {
-		v.Fixup(typestr)
-		// Force type field to match value specified in request path
-		v.Type = typestr
-		err := v.Validate()
-		if err != nil {
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusBadRequest)
-			return
+		if err := putViolation(typestr, v); err != nil {
+			failedVs = append(failedVs, ViolationRequestFailure{
+				ViolationRequest: v,
+				FailureReason:    err.Error(),
+			})
 		}
-
-		if err = validateType(v.Type, v.Object); err != nil {
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		rep, err := repGet(typestr, v.Object)
-		if err == redis.Nil {
-			rep = Reputation{
-				Object:     v.Object,
-				Type:       typestr,
-				Reputation: 100,
-			}
-		} else if err != nil {
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		err = rep.Validate()
-		if err != nil {
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		// If recovery suppression was specified add the correct timestamp to the reputation
-		// entry. Is suppression is already indicated, only update it if it results in a new
-		// timestamp that is beyond what the existing value is.
-		if v.SuppressRecovery > 0 {
-			nd := time.Now().UTC().Add(time.Second *
-				time.Duration(v.SuppressRecovery))
-			if rep.DecayAfter.IsZero() || rep.DecayAfter.Before(nd) {
-				rep.DecayAfter = nd
-			}
-		}
-
-		origRep := rep.Reputation
-		found, err := rep.applyViolation(v.Violation)
-		if err != nil {
-			if !found {
-				// Don't treat submitting an unknown violation as an error, instead
-				// just log it
-				log.WithFields(log.Fields{
-					"violation": v.Violation,
-					"object":    v.Object,
-					"type":      v.Type,
-				}).Warn("ignoring unknown violation")
-				continue
-			}
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		err = rep.set()
-		if err != nil {
-			log.Warnf(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		exc := false
-		if rep.Type == "ip" {
-			exc = isException(rep.Object)
-		}
-		log.WithFields(log.Fields{
-			"violation":           v.Violation,
-			"object":              rep.Object,
-			"type":                rep.Type,
-			"reputation":          rep.Reputation,
-			"decay_after":         rep.DecayAfter,
-			"original_reputation": origRep,
-			"exception":           exc,
-		}).Info("violation applied")
 	}
+
+	if len(failedVs) > 0 {
+		respByt, err := json.Marshal(failedVs)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(respByt)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return
 }
