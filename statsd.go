@@ -29,3 +29,10 @@ func (sc statsdClient) Timing(name string, value time.Duration) error {
 	}
 	return sc.client.Timing(name, value, []string{}, 1)
 }
+
+func (sc statsdClient) Count(name string, value int64) error {
+	if sc.client == nil {
+		return nil
+	}
+	return sc.client.Count(name, value, []string{}, 1)
+}

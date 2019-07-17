@@ -70,18 +70,43 @@ func (v *ViolationRequest) Validate() error {
 	return nil
 }
 
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
 func mwHandler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s := time.Now()
-		defer func() {
-			sruntime.statsd.Timing("http.timing", time.Since(s))
-		}()
+
+		// Add default response headers
 		w.Header().Add("X-Frame-Options", "DENY")
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("Content-Security-Policy",
 			"default-src 'none'; frame-ancestors 'none'; report-uri /__cspreport__")
 		w.Header().Add("Strict-Transport-Security", "max-age=31536000")
-		h.ServeHTTP(w, r)
+
+		// Wrap ResponseWriter to expose the status code.
+		sw := statusWriter{ResponseWriter: w}
+		h.ServeHTTP(&sw, r)
+
+		go func() {
+			status := sw.status
+			if status == 0 {
+				status = 200
+			}
+
+			sruntime.statsd.Timing("http.timing", time.Since(s))
+			sruntime.statsd.Timing(fmt.Sprintf("http.request.method.%s.timing", r.Method), time.Since(s))
+			sruntime.statsd.Timing(fmt.Sprintf("http.response.status.%d.timing", status), time.Since(s))
+			sruntime.statsd.Count(fmt.Sprintf("http.request.method.%s", r.Method), 1)
+			sruntime.statsd.Count(fmt.Sprintf("http.response.status.%d", status), 1)
+		}()
 	})
 }
 
