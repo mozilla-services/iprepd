@@ -96,12 +96,9 @@ func loadExceptions() {
 	log.Info("completed exception refresh")
 }
 
-func isException(ipstr string) bool {
+func isException(ipstr string) (bool, error) {
 	treeLock.Lock()
 	_, f, err := activeTree.GetByString(ipstr)
 	treeLock.Unlock()
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	return f
+	return f, err
 }

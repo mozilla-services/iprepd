@@ -215,7 +215,13 @@ func httpGetReputation(w http.ResponseWriter, r *http.Request) {
 	// If the request is for an IP type object, consult the exception list. Currently
 	// exceptions only apply to IP objects.
 	if typestr == "ip" {
-		if isException(valstr) {
+		exc, err := isException(valstr)
+		if err != nil {
+			log.Errorf("Error looking up exception: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if exc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -276,7 +282,10 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 	}
 	exc := false
 	if rep.Type == "ip" {
-		exc = isException(rep.Object)
+		exc, err = isException(rep.Object)
+		if err != nil {
+			log.Errorf("Error looking up exception: %s", err)
+		}
 	}
 	log.WithFields(log.Fields{
 		"object":     rep.Object,
@@ -423,7 +432,10 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, typestr stri
 		}
 		exc := false
 		if rep.Type == "ip" {
-			exc = isException(rep.Object)
+			exc, err = isException(rep.Object)
+			if err != nil {
+				log.Errorf("Error looking up exception: %s", err)
+			}
 		}
 		log.WithFields(log.Fields{
 			"violation":           v.Violation,
