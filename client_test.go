@@ -106,24 +106,27 @@ func TestGetReputation(t *testing.T) {
 		Name        string
 		Object      string
 		ObjectType  string
+		ExpectedRep int
 		ExpectErr   bool
 		ExpectedErr error
 		C           *Client
 	}{
 		// positive tests
 		{
-			Name:       "test: Good IP",
-			Object:     "192.168.0.1",
-			ObjectType: typeIP,
-			ExpectErr:  false,
-			C:          goodClient,
+			Name:        "test: Good IP",
+			Object:      "192.168.0.1",
+			ObjectType:  typeIP,
+			ExpectErr:   false,
+			ExpectedRep: 50,
+			C:           goodClient,
 		},
 		{
-			Name:       "test: Good Email",
-			Object:     "usr@mozilla.com",
-			ObjectType: typeEmail,
-			ExpectErr:  false,
-			C:          goodClient,
+			Name:        "test: Good Email",
+			Object:      "usr@mozilla.com",
+			ObjectType:  typeEmail,
+			ExpectErr:   false,
+			ExpectedRep: 50,
+			C:           goodClient,
 		},
 		// client side validation errors
 		{
@@ -195,6 +198,7 @@ func TestGetReputation(t *testing.T) {
 			if tst.ObjectType == typeIP {
 				assert.Equal(t, tst.Object, rep.IP, tst.Name)
 			}
+			assert.Equal(t, rep.Reputation, tst.ExpectedRep)
 			assert.Equal(t, false, rep.Reviewed, tst.Name)
 			assert.Equal(t, "0001-01-01 00:00:00 +0000 UTC", rep.DecayAfter.String(), tst.Name)
 			assert.Equal(t, true, rep.LastUpdated.Before(time.Now()), tst.Name)
@@ -592,15 +596,15 @@ func TestBatchApplyViolations(t *testing.T) {
 			Name: "test: Good IPs",
 			Type: typeIP,
 			VRS: []ViolationRequest{
-				ViolationRequest{
+				{
 					Object:    "208.28.28.25",
 					Violation: "violation1",
 				},
-				ViolationRequest{
+				{
 					Object:    "208.28.28.26",
 					Violation: "violation1",
 				},
-				ViolationRequest{
+				{
 					Object:    "208.28.28.28",
 					Violation: "violation1",
 				},
@@ -612,15 +616,15 @@ func TestBatchApplyViolations(t *testing.T) {
 			Name: "test: Good Emails",
 			Type: typeEmail,
 			VRS: []ViolationRequest{
-				ViolationRequest{
+				{
 					Object:    "lfine@mozilla.com",
 					Violation: "violation1",
 				},
-				ViolationRequest{
+				{
 					Object:    "choward@mozilla.com",
 					Violation: "violation1",
 				},
-				ViolationRequest{
+				{
 					Object:    "mhoward@mozilla.com",
 					Violation: "violation1",
 				},
@@ -653,11 +657,11 @@ func TestBatchApplyViolations(t *testing.T) {
 			Name: "test: Malformed IP in Violation Request",
 			Type: typeIP,
 			VRS: []ViolationRequest{
-				ViolationRequest{
+				{
 					Object:    "asd8.28.26",
 					Violation: "violation1",
 				},
-				ViolationRequest{
+				{
 					Object:    "208.28.28.26",
 					Violation: "violation1",
 				},
@@ -670,7 +674,7 @@ func TestBatchApplyViolations(t *testing.T) {
 			Name: "test: Unauthorized",
 			Type: typeIP,
 			VRS: []ViolationRequest{
-				ViolationRequest{
+				{
 					Type:      typeIP,
 					Object:    "208.28.28.28",
 					Violation: "violation1",
