@@ -140,6 +140,22 @@ func TestGetReputation(t *testing.T) {
 			ExpectedErr: errors.New(clientErrObjectTypeEmpty),
 			C:           goodClient,
 		},
+		{
+			Name:        "test: Incorrect Object Type",
+			Object:      "8.8.8.8",
+			ObjectType:  typeEmail,
+			ExpectErr:   true,
+			ExpectedErr: errors.New(clientErrBadType),
+			C:           goodClient,
+		},
+		{
+			Name:        "test: Bad Object Type",
+			Object:      "I am not an IP",
+			ObjectType:  typeIP,
+			ExpectErr:   true,
+			ExpectedErr: errors.New(clientErrBadType),
+			C:           goodClient,
+		},
 		// server error propagation
 		{
 			Name:        "test: Non Existent Email",
@@ -155,22 +171,6 @@ func TestGetReputation(t *testing.T) {
 			ObjectType:  typeIP,
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusNotFound),
-			C:           goodClient,
-		},
-		{
-			Name:        "test: Incorrect Object Type",
-			Object:      "8.8.8.8",
-			ObjectType:  typeEmail,
-			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
-			C:           goodClient,
-		},
-		{
-			Name:        "test: Bad Object Type",
-			Object:      "I am not an IP",
-			ObjectType:  typeIP,
-			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
 			C:           goodClient,
 		},
 		{
@@ -266,7 +266,6 @@ func TestSetReputation(t *testing.T) {
 			ExpectedErr: errors.New(clientErrObjectTypeEmpty),
 			C:           goodClient,
 		},
-		// server error propagation
 		{
 			Name: "test: Bad IP",
 			R: &Reputation{
@@ -275,7 +274,7 @@ func TestSetReputation(t *testing.T) {
 				Reputation: 45,
 			},
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
 		{
@@ -286,9 +285,10 @@ func TestSetReputation(t *testing.T) {
 				Reputation: 45,
 			},
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
+		// server error propagation
 		{
 			Name: "test: Unauthorized",
 			R: &Reputation{
@@ -373,13 +373,12 @@ func TestDeleteReputation(t *testing.T) {
 			ExpectedErr: errors.New(clientErrObjectTypeEmpty),
 			C:           goodClient,
 		},
-		// server error propagation
 		{
 			Name:        "test: Incorrect Object Type",
 			Object:      "8.8.8.8",
 			ObjectType:  typeEmail,
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
 		{
@@ -387,9 +386,10 @@ func TestDeleteReputation(t *testing.T) {
 			Object:      "I am not an IP",
 			ObjectType:  typeIP,
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
+		// server error propagation
 		{
 			Name:        "test: Unauthorized",
 			Object:      "192.168.0.1",
@@ -524,7 +524,6 @@ func TestApplyViolation(t *testing.T) {
 			ExpectedErr: errors.New(clientErrViolationEmpty),
 			C:           goodClient,
 		},
-		// server error propagation
 		{
 			Name: "test: Bad IP",
 			VR: &ViolationRequest{
@@ -533,7 +532,7 @@ func TestApplyViolation(t *testing.T) {
 				Violation: "violation1",
 			},
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
 		{
@@ -544,9 +543,10 @@ func TestApplyViolation(t *testing.T) {
 				Violation: "violation1",
 			},
 			ExpectErr:   true,
-			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusBadRequest),
+			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
 		},
+		// server error propagation
 		{
 			Name: "test: Unauthorized",
 			VR: &ViolationRequest{

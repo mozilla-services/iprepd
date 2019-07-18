@@ -24,6 +24,7 @@ const (
 	clientErrAuthEmpty           = "auth credentials cannot be empty"
 	clientErrObjectEmpty         = "object cannot be empty"
 	clientErrObjectTypeEmpty     = "object type cannot be empty"
+	clientErrBadType             = "object provided does not match type"
 	clientErrViolationEmpty      = "violation cannot be empty"
 	clientErrReputationNil       = "reputation cannot be nil"
 	clientErrViolationRequestNil = "violation request cannot be nil"
@@ -119,6 +120,9 @@ func (c *Client) GetReputation(objectType, object string) (*Reputation, error) {
 	if objectType == "" {
 		return nil, errors.New(clientErrObjectTypeEmpty)
 	}
+	if err := validateType(objectType, object); err != nil {
+		return nil, errors.New(clientErrBadType)
+	}
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/type/%s/%s", c.hostURL, objectType, object), nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", clientErrBuildRequest, err)
@@ -154,6 +158,9 @@ func (c *Client) SetReputation(r *Reputation) error {
 	if r.Type == "" {
 		return errors.New(clientErrObjectTypeEmpty)
 	}
+	if err := validateType(r.Type, r.Object); err != nil {
+		return errors.New(clientErrBadType)
+	}
 	byt, err := json.Marshal(&r)
 	if err != nil {
 		return fmt.Errorf("%s: %s", clientErrMarshal, err)
@@ -181,6 +188,9 @@ func (c *Client) DeleteReputation(objectType, object string) error {
 	}
 	if objectType == "" {
 		return errors.New(clientErrObjectTypeEmpty)
+	}
+	if err := validateType(objectType, object); err != nil {
+		return errors.New(clientErrBadType)
 	}
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/type/%s/%s", c.hostURL, objectType, object), nil)
 	if err != nil {
@@ -265,6 +275,9 @@ func (c *Client) ApplyViolation(vr *ViolationRequest) error {
 	}
 	if vr.Type == "" {
 		return errors.New(clientErrObjectTypeEmpty)
+	}
+	if err := validateType(vr.Type, vr.Object); err != nil {
+		return errors.New(clientErrBadType)
 	}
 	if vr.Violation == "" {
 		return errors.New(clientErrViolationEmpty)
