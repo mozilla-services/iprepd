@@ -1,0 +1,86 @@
+---
+# Address/port to listen on for API requests
+listen: 0.0.0.0:8080
+# Address/port for Redis connection
+redis:
+  # The primary Redis server.
+  addr: 127.0.0.1:6379
+  # Support a Redis "cluster mode disabled" cluster with read replicas. Any read only replica
+  # instances can be added here.
+  #replicas:
+  #  - 127.0.0.1:7000
+  # Read, write, and dial connection timeouts in ms (defaults shown).
+  readtimeout: 100
+  writetimeout: 100
+  dialtimeout: 250
+  # If 0, use go-redis default maximum client pool size (10 * runtime.NumCPU()). Set to non-zero to
+  # manually specify maximum pool size.
+  # https://godoc.org/github.com/go-redis/redis#Options
+  #maxpoolsize: 0
+  # The minimum number of idle connections to try to keep open with redis. If 0, the value will
+  # default to 20. If the maximum pool size is less than 20, it will default to the entire pool
+  # size.
+  #minidleconn: 0
+auth:
+  # Configure any Hawk credentials here. Each credential should be specified as a key/value
+  # pair, where the key is the Hawk ID and the value is the secret.
+  hawk:
+    root: toor
+  # Configure any API key credentials here. Each credential should be specified as a key/value
+  # pair, where the key is just a descriptive ID and the value is the actual API key that would
+  # be submitted.
+  apikey:
+    testuser: test
+  # Set disableauth to true to turn of all authentication.
+  disableauth: false
+# Configure violations that can be used when submitting a violation for an object
+# in this section.
+#
+# name: The name of a violation as would be submitted in a request to the API.
+##
+# penalty: The number of points this violation will decrease the reputation for
+#          an object by.
+#
+# decreaselimit: The lower limit by which a given violation will decrease the reputation
+#                for a given object to. For example, if a violation has a penalty of 25
+#                and a decreaselimit of 50, the first time this violation is applied to an
+#                object it will result in a reputation of 75. The second time, a reputation
+#                score of 50. And subsequent violations will not lower the reputation further.
+violations:
+  - name: test
+    penalty: 50
+    decreaselimit: 50
+  - name: test2
+    penalty: 5
+    decreaselimit: 25
+# The decay configuration controls how the reputation for an object recovers back to
+# 100 over time.
+#
+# points: The number of points added to the reputation of an object every interval.
+#
+# interval: How often the points are added to the reputation.
+decay:
+  points: 1
+  interval: 1s
+# Exceptions control IP address exceptions in iprepd. Any IP that matches an exception will
+# not be returned by iprepd if it is requested (e.g., it will effectively have a reputation
+# score of 100). Useful for exempting internal IP addresses.
+#
+# Note the these exceptions only apply to requests for "ip" type objects, either through
+# the legacy API endpoints or object requests of type "ip".
+exceptions:
+  # List any files that contain a list of CIDR subnets, one per line, that are loaded as
+  # exceptions.
+  file:
+    - ./exception1.txt
+    - ./exception2.txt
+  # If aws is set to true, iprepd will periodically query for known AWS IP address ranges and
+  # add these to the exception list.
+  aws: false
+# versionresponse specifies a path to a file, the contents of which will be returned on a
+# request to the /__version__ endpoint. If the file isn't found a warning will be printed
+# in the log and the daemon will not return any data at this endpoint.
+versionresponse: ./version.json
+# statsd address for metrics. To disable metrics collection, simply delete the below section.
+statsd:
+  addr: "127.0.0.1:8125"
