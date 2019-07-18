@@ -62,7 +62,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.0.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
@@ -78,7 +78,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "254.254.254.254", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 40, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	// IP field should also be set
@@ -137,7 +137,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.2.20", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 25, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
@@ -162,7 +162,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "riker@mozilla.com", r.Object)
-	assert.Equal(t, "email", r.Type)
+	assert.Equal(t, TypeEmail, r.Type)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
@@ -200,19 +200,19 @@ func TestHandlers(t *testing.T) {
 		if rep.Object == "192.168.2.20" {
 			c++
 			assert.Equal(t, "192.168.2.20", rep.Object)
-			assert.Equal(t, "ip", rep.Type)
+			assert.Equal(t, TypeIP, rep.Type)
 			assert.Equal(t, 25, rep.Reputation)
 		}
 		if rep.Object == "192.168.0.1" {
 			c++
 			assert.Equal(t, "192.168.0.1", rep.Object)
-			assert.Equal(t, "ip", rep.Type)
+			assert.Equal(t, TypeIP, rep.Type)
 			assert.Equal(t, 50, rep.Reputation)
 		}
 		if rep.Object == "riker@mozilla.com" {
 			c++
 			assert.Equal(t, "riker@mozilla.com", rep.Object)
-			assert.Equal(t, "email", rep.Type)
+			assert.Equal(t, TypeEmail, rep.Type)
 			assert.Equal(t, 50, rep.Reputation)
 		}
 		if rep.IP == "254.254.254.254" {
@@ -256,7 +256,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "janeway@mozilla.com", r.Object)
-	assert.Equal(t, "email", r.Type)
+	assert.Equal(t, TypeEmail, r.Type)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	recorder = httptest.NewRecorder()
@@ -285,7 +285,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.3.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 95, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	assert.True(t, r.DecayAfter.IsZero())
@@ -307,7 +307,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "riker@mozilla.com", r.Object)
-	assert.Equal(t, "email", r.Type)
+	assert.Equal(t, TypeEmail, r.Type)
 	assert.Equal(t, 45, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	assert.True(t, r.DecayAfter.IsZero())
@@ -330,7 +330,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.4.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 95, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	recorder = httptest.NewRecorder()
@@ -343,7 +343,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.5.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
@@ -365,7 +365,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "riker@mozilla.com", r.Object)
-	assert.Equal(t, "email", r.Type)
+	assert.Equal(t, TypeEmail, r.Type)
 	assert.Equal(t, 40, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	recorder = httptest.NewRecorder()
@@ -378,7 +378,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "troi@mozilla.com", r.Object)
-	assert.Equal(t, "email", r.Type)
+	assert.Equal(t, TypeEmail, r.Type)
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
@@ -401,7 +401,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.6.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 95, r.Reputation)
 	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
 
@@ -422,7 +422,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.6.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 90, r.Reputation)
 	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
 
@@ -444,7 +444,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.6.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 85, r.Reputation)
 	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
 
@@ -467,7 +467,7 @@ func TestHandlers(t *testing.T) {
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
 	assert.Equal(t, "192.168.6.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 	assert.Equal(t, 85, r.Reputation)
 	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
 
@@ -522,7 +522,7 @@ func TestHandlersLegacy(t *testing.T) {
 	// The object and type fields should also be set on request to the legacy endpoint
 	// here
 	assert.Equal(t, "192.168.0.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 
 	// request reputation for a stored legacy format entry
 	recorder = httptest.NewRecorder()
@@ -541,7 +541,7 @@ func TestHandlersLegacy(t *testing.T) {
 	// The object and type fields should also be set on request to the legacy endpoint
 	// here
 	assert.Equal(t, "254.254.254.254", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 
 	// request reputation for an unknown ip
 	recorder = httptest.NewRecorder()
@@ -580,7 +580,7 @@ func TestHandlersLegacy(t *testing.T) {
 	assert.Equal(t, 25, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 	assert.Equal(t, "192.168.2.20", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 
 	// try to store invalid reputation score
 	recorder = httptest.NewRecorder()
@@ -621,7 +621,7 @@ func TestHandlersLegacy(t *testing.T) {
 	assert.Equal(t, false, r.Reviewed)
 	assert.True(t, r.DecayAfter.IsZero())
 	assert.Equal(t, "192.168.3.1", r.Object)
-	assert.Equal(t, "ip", r.Type)
+	assert.Equal(t, TypeIP, r.Type)
 
 	// put violations
 	recorder = httptest.NewRecorder()

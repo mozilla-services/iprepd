@@ -37,14 +37,17 @@ type ViolationRequest struct {
 }
 
 const (
-	typeIP    = "ip"
-	typeEmail = "email"
+	// TypeIP is the object type for IP addresses
+	TypeIP = "ip"
+
+	// TypeEmail is the object type for email addresses
+	TypeEmail = "email"
 )
 
 // Fixup is used to convert legacy format violations
 func (v *ViolationRequest) Fixup(typestr string) {
 	// Only apply fixup to ip type requests
-	if typestr != "ip" {
+	if typestr != TypeIP {
 		return
 	}
 	// If the type field is not set, set it to the type specified in the request
@@ -130,7 +133,7 @@ func startAPI() error {
 func wrapLegacyIPRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := mux.Vars(r)
-		m["type"] = "ip"
+		m["type"] = TypeIP
 		mux.SetURLVars(r, m)
 		rf(w, r)
 	}
@@ -219,7 +222,7 @@ func httpGetReputation(w http.ResponseWriter, r *http.Request) {
 	}
 	// If the request is for an IP type object, consult the exception list. Currently
 	// exceptions only apply to IP objects.
-	if typestr == "ip" {
+	if typestr == TypeIP {
 		exc, err := isException(valstr)
 		if err != nil {
 			log.Errorf("Error looking up exception: %s", err)
@@ -286,7 +289,7 @@ func httpPutReputation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	exc := false
-	if rep.Type == "ip" {
+	if rep.Type == TypeIP {
 		exc, err = isException(rep.Object)
 		if err != nil {
 			log.Errorf("Error looking up exception: %s", err)
@@ -436,7 +439,7 @@ func httpPutViolationsInner(w http.ResponseWriter, r *http.Request, typestr stri
 			return
 		}
 		exc := false
-		if rep.Type == "ip" {
+		if rep.Type == TypeIP {
 			exc, err = isException(rep.Object)
 			if err != nil {
 				log.Errorf("Error looking up exception: %s", err)

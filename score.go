@@ -50,7 +50,7 @@ func (r *Reputation) Validate() error {
 	if r.Type == "" {
 		return fmt.Errorf("reputation entry missing required field type")
 	}
-	if r.Type != "ip" && r.IP != "" {
+	if r.Type != TypeIP && r.IP != "" {
 		return fmt.Errorf("ip field set and type is not ip")
 	}
 	if r.Reputation < 0 || r.Reputation > 100 {
@@ -63,7 +63,7 @@ func keyFromTypeAndValue(typestr string, valstr string) (string, error) {
 	if typestr == "" || valstr == "" {
 		return "", fmt.Errorf("type or value was not set")
 	}
-	if typestr == "ip" {
+	if typestr == TypeIP {
 		return valstr, nil
 	}
 	return typestr + " " + valstr, nil
@@ -159,7 +159,7 @@ func repGet(typestr string, valstr string) (ret Reputation, err error) {
 	}
 
 	// Apply some compatibility fixups here for IP type requests
-	if typestr == "ip" {
+	if typestr == TypeIP {
 		if ret.Object == "" && ret.IP != "" {
 			// If we have an IP field set but object is unset, set the object field
 			// to IP as this is likely a legacy entry.
