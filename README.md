@@ -33,6 +33,20 @@ docker run -ti --rm -v `pwd`/iprepd.yaml:/app/iprepd.yaml mozilla/iprepd:latest
 
 ## API
 
+### Authentication
+
+iprepd supports two forms of authentication. Clients can authenticate to the service using either
+standard API keys, or by using [Hawk authentication](https://github.com/hapijs/hawk).
+
+Standard API key authentication can be configured in the configuration file in the `apikey` (for
+read/write) and `ROapikey` (for a read-only user) sections under the `auth` section in the
+configuration file. To use API key authentication, clients should send an `Authorization` header
+that is of format `APIKey <apikey>`.
+
+Similarly, Hawk authentication is configured under the `hawk` and `ROhawk` sections in the
+configuration file. To use Hawk authentication clients need to include the hawk authentication
+header in the `Authorization` header when making a request.
+
 ### Endpoints
 
 #### GET /type/ip/10.0.0.1
