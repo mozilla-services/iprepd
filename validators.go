@@ -7,8 +7,8 @@ import (
 )
 
 var validators = map[string]func(string) error{
-	"ip":    validateTypeIP,
-	"email": validateTypeEmail,
+	TypeIP:    validateTypeIP,
+	TypeEmail: validateTypeEmail,
 }
 
 func validateTypeIP(val string) error {

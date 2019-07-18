@@ -36,7 +36,7 @@ func baseTest() error {
 	sruntime.versionResponse = vrBytes
 	r := Reputation{
 		Object:     "192.168.0.1",
-		Type:       "ip",
+		Type:       TypeIP,
 		Reputation: 50,
 	}
 	err = r.set()
@@ -45,7 +45,7 @@ func baseTest() error {
 	}
 	r = Reputation{
 		Object:     "10.0.0.1",
-		Type:       "ip",
+		Type:       TypeIP,
 		Reputation: 25,
 	}
 	err = r.set()
@@ -54,7 +54,7 @@ func baseTest() error {
 	}
 	r = Reputation{
 		Object:     "usr@mozilla.com",
-		Type:       "email",
+		Type:       TypeEmail,
 		Reputation: 50,
 	}
 	err = r.set()

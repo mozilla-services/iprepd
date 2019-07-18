@@ -115,7 +115,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Good IP",
 			Object:      "192.168.0.1",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   false,
 			ExpectedRep: 50,
 			C:           goodClient,
@@ -123,7 +123,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Good Email",
 			Object:      "usr@mozilla.com",
-			ObjectType:  typeEmail,
+			ObjectType:  TypeEmail,
 			ExpectErr:   false,
 			ExpectedRep: 50,
 			C:           goodClient,
@@ -131,7 +131,7 @@ func TestGetReputation(t *testing.T) {
 		// client side validation errors
 		{
 			Name:        "test: Missing Object",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrObjectEmpty),
 			C:           goodClient,
@@ -146,7 +146,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Incorrect Object Type",
 			Object:      "8.8.8.8",
-			ObjectType:  typeEmail,
+			ObjectType:  TypeEmail,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
@@ -154,7 +154,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Bad Object Type",
 			Object:      "I am not an IP",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
@@ -163,7 +163,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Non Existent Email",
 			Object:      "notinstore@mozilla.com",
-			ObjectType:  typeEmail,
+			ObjectType:  TypeEmail,
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusNotFound),
 			C:           goodClient,
@@ -171,7 +171,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Non Existent IP",
 			Object:      "8.8.8.8",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusNotFound),
 			C:           goodClient,
@@ -179,7 +179,7 @@ func TestGetReputation(t *testing.T) {
 		{
 			Name:        "test: Unauthorized",
 			Object:      "192.168.0.1",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusUnauthorized),
 			C:           badClient,
@@ -195,7 +195,7 @@ func TestGetReputation(t *testing.T) {
 			assert.Nil(t, err, tst.Name)
 			assert.Equal(t, tst.Object, rep.Object, tst.Name)
 			assert.Equal(t, tst.ObjectType, rep.Type, tst.Name)
-			if tst.ObjectType == typeIP {
+			if tst.ObjectType == TypeIP {
 				assert.Equal(t, tst.Object, rep.IP, tst.Name)
 			}
 			assert.Equal(t, rep.Reputation, tst.ExpectedRep)
@@ -226,7 +226,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Good IP",
 			R: &Reputation{
-				Type:       typeIP,
+				Type:       TypeIP,
 				Object:     "208.28.28.28",
 				Reputation: 10,
 			},
@@ -236,7 +236,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Good Email",
 			R: &Reputation{
-				Type:       typeEmail,
+				Type:       TypeEmail,
 				Object:     "sstallone@mozilla.com",
 				Reputation: 45,
 			},
@@ -253,7 +253,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Reputation No Object",
 			R: &Reputation{
-				Type:       typeEmail,
+				Type:       TypeEmail,
 				Reputation: 45,
 			},
 			ExpectErr:   true,
@@ -273,7 +273,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Bad IP",
 			R: &Reputation{
-				Type:       typeIP,
+				Type:       TypeIP,
 				Object:     "safhkenfo",
 				Reputation: 45,
 			},
@@ -284,7 +284,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Bad Email",
 			R: &Reputation{
-				Type:       typeEmail,
+				Type:       TypeEmail,
 				Object:     "safhkenfo",
 				Reputation: 45,
 			},
@@ -296,7 +296,7 @@ func TestSetReputation(t *testing.T) {
 		{
 			Name: "test: Unauthorized",
 			R: &Reputation{
-				Type:       typeIP,
+				Type:       TypeIP,
 				Object:     "208.28.28.28",
 				Reputation: 10,
 			},
@@ -337,35 +337,35 @@ func TestDeleteReputation(t *testing.T) {
 		{
 			Name:       "test: Good IP",
 			Object:     "192.168.0.1",
-			ObjectType: typeIP,
+			ObjectType: TypeIP,
 			ExpectErr:  false,
 			C:          goodClient,
 		},
 		{
 			Name:       "test: Good Email",
 			Object:     "usr@mozilla.com",
-			ObjectType: typeEmail,
+			ObjectType: TypeEmail,
 			ExpectErr:  false,
 			C:          goodClient,
 		},
 		{
 			Name:       "test: Non Existent Email",
 			Object:     "notinstore@mozilla.com",
-			ObjectType: typeEmail,
+			ObjectType: TypeEmail,
 			ExpectErr:  false,
 			C:          goodClient,
 		},
 		{
 			Name:       "test: Non Existent IP",
 			Object:     "8.8.8.8",
-			ObjectType: typeIP,
+			ObjectType: TypeIP,
 			ExpectErr:  false,
 			C:          goodClient,
 		},
 		// client side validation errors
 		{
 			Name:        "test: Missing Object",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrObjectEmpty),
 			C:           goodClient,
@@ -380,7 +380,7 @@ func TestDeleteReputation(t *testing.T) {
 		{
 			Name:        "test: Incorrect Object Type",
 			Object:      "8.8.8.8",
-			ObjectType:  typeEmail,
+			ObjectType:  TypeEmail,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
@@ -388,7 +388,7 @@ func TestDeleteReputation(t *testing.T) {
 		{
 			Name:        "test: Bad Object Type",
 			Object:      "I am not an IP",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: errors.New(clientErrBadType),
 			C:           goodClient,
@@ -397,7 +397,7 @@ func TestDeleteReputation(t *testing.T) {
 		{
 			Name:        "test: Unauthorized",
 			Object:      "192.168.0.1",
-			ObjectType:  typeIP,
+			ObjectType:  TypeIP,
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("%s: %d", clientErrNon200, http.StatusUnauthorized),
 			C:           badClient,
@@ -474,7 +474,7 @@ func TestApplyViolation(t *testing.T) {
 		{
 			Name: "test: Good IP",
 			VR: &ViolationRequest{
-				Type:      typeIP,
+				Type:      TypeIP,
 				Object:    "208.28.28.28",
 				Violation: "violation1",
 			},
@@ -484,7 +484,7 @@ func TestApplyViolation(t *testing.T) {
 		{
 			Name: "test: Good Email",
 			VR: &ViolationRequest{
-				Type:      typeEmail,
+				Type:      TypeEmail,
 				Object:    "sstallone@mozilla.com",
 				Violation: "violation1",
 			},
@@ -502,7 +502,7 @@ func TestApplyViolation(t *testing.T) {
 			Name:      "test: Violation Request No Object",
 			ExpectErr: true,
 			VR: &ViolationRequest{
-				Type:      typeEmail,
+				Type:      TypeEmail,
 				Violation: "violation1",
 			},
 			ExpectedErr: errors.New(clientErrObjectEmpty),
@@ -522,7 +522,7 @@ func TestApplyViolation(t *testing.T) {
 			Name:      "test: Violation Request No Violation",
 			ExpectErr: true,
 			VR: &ViolationRequest{
-				Type:   typeEmail,
+				Type:   TypeEmail,
 				Object: "sstallone@mozilla.com",
 			},
 			ExpectedErr: errors.New(clientErrViolationEmpty),
@@ -531,7 +531,7 @@ func TestApplyViolation(t *testing.T) {
 		{
 			Name: "test: Bad IP",
 			VR: &ViolationRequest{
-				Type:      typeIP,
+				Type:      TypeIP,
 				Object:    "I'm not an IP",
 				Violation: "violation1",
 			},
@@ -542,7 +542,7 @@ func TestApplyViolation(t *testing.T) {
 		{
 			Name: "test: Bad Email",
 			VR: &ViolationRequest{
-				Type:      typeEmail,
+				Type:      TypeEmail,
 				Object:    "I'm not an email",
 				Violation: "violation1",
 			},
@@ -554,7 +554,7 @@ func TestApplyViolation(t *testing.T) {
 		{
 			Name: "test: Unauthorized",
 			VR: &ViolationRequest{
-				Type:      typeIP,
+				Type:      TypeIP,
 				Object:    "208.28.28.28",
 				Violation: "violation1",
 			},
@@ -594,7 +594,7 @@ func TestBatchApplyViolations(t *testing.T) {
 		//	positive tests
 		{
 			Name: "test: Good IPs",
-			Type: typeIP,
+			Type: TypeIP,
 			VRS: []ViolationRequest{
 				{
 					Object:    "208.28.28.25",
@@ -614,7 +614,7 @@ func TestBatchApplyViolations(t *testing.T) {
 		},
 		{
 			Name: "test: Good Emails",
-			Type: typeEmail,
+			Type: TypeEmail,
 			VRS: []ViolationRequest{
 				{
 					Object:    "lfine@mozilla.com",
@@ -635,14 +635,14 @@ func TestBatchApplyViolations(t *testing.T) {
 		// client side validation errors
 		{
 			Name:      "test: Empty Slice",
-			Type:      typeIP,
+			Type:      TypeIP,
 			VRS:       []ViolationRequest{},
 			ExpectErr: false,
 			C:         goodClient,
 		},
 		{
 			Name:      "test: Nil Slice",
-			Type:      typeIP,
+			Type:      TypeIP,
 			ExpectErr: false,
 			C:         goodClient,
 		},
@@ -655,7 +655,7 @@ func TestBatchApplyViolations(t *testing.T) {
 		// server error propagation
 		{
 			Name: "test: Malformed IP in Violation Request",
-			Type: typeIP,
+			Type: TypeIP,
 			VRS: []ViolationRequest{
 				{
 					Object:    "asd8.28.26",
@@ -672,10 +672,10 @@ func TestBatchApplyViolations(t *testing.T) {
 		},
 		{
 			Name: "test: Unauthorized",
-			Type: typeIP,
+			Type: TypeIP,
 			VRS: []ViolationRequest{
 				{
-					Type:      typeIP,
+					Type:      TypeIP,
 					Object:    "208.28.28.28",
 					Violation: "violation1",
 				},

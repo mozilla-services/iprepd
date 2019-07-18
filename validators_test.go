@@ -17,33 +17,33 @@ func TestValidateType(t *testing.T) {
 	}{
 		{
 			Name:      "test: validate good IP",
-			Type:      "ip",
+			Type:      TypeIP,
 			Object:    "228.28.28.28",
 			ExpectErr: false,
 		},
 		{
 			Name:      "test: validate good Email",
-			Type:      "email",
+			Type:      TypeEmail,
 			Object:    "sstallone@mozilla.com",
 			ExpectErr: false,
 		},
 		{
 			Name:        "test: validate bad IP",
-			Type:        "ip",
+			Type:        TypeIP,
 			Object:      "2assfa28.28",
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("invalid ip format %v", "2assfa28.28"),
 		},
 		{
 			Name:        "test: validate bad Email",
-			Type:        "email",
+			Type:        TypeEmail,
 			Object:      "not an email",
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("invalid email format %v", "not an email"),
 		},
 		{
 			Name:        "test: validate wrong type",
-			Type:        "email",
+			Type:        TypeEmail,
 			Object:      "228.28.28.28",
 			ExpectErr:   true,
 			ExpectedErr: fmt.Errorf("invalid email format %v", "228.28.28.28"),
