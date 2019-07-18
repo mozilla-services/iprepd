@@ -36,6 +36,11 @@ type ViolationRequest struct {
 	IP string `json:"ip,omitempty"`
 }
 
+const (
+	typeIP    = "ip"
+	typeEmail = "email"
+)
+
 // Fixup is used to convert legacy format violations
 func (v *ViolationRequest) Fixup(typestr string) {
 	// Only apply fixup to ip type requests

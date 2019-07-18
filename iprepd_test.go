@@ -10,6 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	testBuild   = "testing"
+	testCommit  = "testcommit"
+	testVersion = "testversion"
+	testSource  = "https://github.com/mozilla-services/iprepd"
+)
+
 func baseTest() error {
 	_, err := sruntime.redis.flushAll().Result()
 	if err != nil {
@@ -17,6 +24,16 @@ func baseTest() error {
 	}
 	sruntime.cfg.Decay.Points = 0
 	sruntime.cfg.Decay.Interval = time.Minute
+	vrBytes, err := json.Marshal(&VersionResponse{
+		Build:   testBuild,
+		Commit:  testCommit,
+		Version: testVersion,
+		Source:  testSource,
+	})
+	if err != nil {
+		return err
+	}
+	sruntime.versionResponse = vrBytes
 	r := Reputation{
 		Object:     "192.168.0.1",
 		Type:       "ip",
@@ -30,6 +47,15 @@ func baseTest() error {
 		Object:     "10.0.0.1",
 		Type:       "ip",
 		Reputation: 25,
+	}
+	err = r.set()
+	if err != nil {
+		return err
+	}
+	r = Reputation{
+		Object:     "usr@mozilla.com",
+		Type:       "email",
+		Reputation: 50,
 	}
 	err = r.set()
 	if err != nil {

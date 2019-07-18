@@ -194,7 +194,7 @@ func TestHandlers(t *testing.T) {
 	var reputations []Reputation
 	err = json.Unmarshal(buf, &reputations)
 	assert.Nil(t, err)
-	assert.Equal(t, 5, len(reputations))
+	assert.Equal(t, 6, len(reputations))
 	c := 0
 	for _, rep := range reputations {
 		if rep.Object == "192.168.2.20" {
