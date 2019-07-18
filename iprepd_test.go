@@ -85,6 +85,8 @@ func TestMain(m *testing.M) {
 	}
 	sruntime.cfg.Auth.Hawk = map[string]string{"root": "toor", "user": "secret"}
 	sruntime.cfg.Auth.APIKey = map[string]string{"u1": "key1", "u2": "key2"}
+	sruntime.cfg.Auth.ROHawk = map[string]string{"roroot": "rotoor"}
+	sruntime.cfg.Auth.ROAPIKey = map[string]string{"rou1": "rokey1"}
 	sruntime.cfg.Exceptions.File = []string{"./testdata/exceptions.txt"}
 	sruntime.cfg.Exceptions.AWS = true
 	sruntime.cfg.Decay.Points = 0

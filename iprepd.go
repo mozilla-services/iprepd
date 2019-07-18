@@ -35,6 +35,8 @@ type serverCfg struct {
 		DisableAuth bool
 		Hawk        map[string]string
 		APIKey      map[string]string
+		ROHawk      map[string]string
+		ROAPIKey    map[string]string
 	}
 	Violations []Violation
 	Decay      struct {

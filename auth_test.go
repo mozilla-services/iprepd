@@ -41,6 +41,22 @@ func TestAuth(t *testing.T) {
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
+	// valid Read-Only API key for write-not-required endpoint
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req.Header.Set("Authorization", "APIKey rokey1")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// valid Read-Only API key for write-required endpoint
+	recorder = httptest.NewRecorder()
+	buf := "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req.Header.Set("Authorization", "APIKey rokey1")
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+
 	// valid hawk header
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
@@ -52,6 +68,35 @@ func TestAuth(t *testing.T) {
 	req.Header.Set("Authorization", auth.RequestHeader())
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// valid Read-Only hawk for a write-not-required endpoint
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
+		ID:   "roroot",
+		Key:  "rotoor",
+		Hash: sha256.New,
+	}, 0)
+	req.Header.Set("Authorization", auth.RequestHeader())
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	// valid Read-Only hawk for a write-required endpoint
+	recorder = httptest.NewRecorder()
+	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
+		ID:   "roroot",
+		Key:  "rotoor",
+		Hash: sha256.New,
+	}, 0)
+	hash := auth.PayloadHash("application/json")
+	hash.Write([]byte(buf))
+	auth.SetHash(hash)
+	req.Header.Set("Authorization", auth.RequestHeader())
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// invalid hawk id
 	recorder = httptest.NewRecorder()
@@ -93,14 +138,14 @@ func TestAuth(t *testing.T) {
 
 	// valid hawk put with a request body
 	recorder = httptest.NewRecorder()
-	buf := "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
 	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
 		Hash: sha256.New,
 	}, 0)
-	hash := auth.PayloadHash("application/json")
+	hash = auth.PayloadHash("application/json")
 	hash.Write([]byte(buf))
 	auth.SetHash(hash)
 	req.Header.Set("Authorization", auth.RequestHeader())

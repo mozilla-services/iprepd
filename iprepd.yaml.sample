@@ -31,6 +31,12 @@ auth:
   # be submitted.
   apikey:
     testuser: test
+  # Configure any Read Only Hawk credentials here.
+  ROhawk:
+    roroot: rotoor
+  # Configure any Read Only API key credentials here.
+  ROapikey:
+    rotestuser: rotest
   # Set disableauth to true to turn of all authentication.
   disableauth: false
 # Configure violations that can be used when submitting a violation for an object
