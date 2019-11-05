@@ -1,0 +1,34 @@
+# github.com/DataDog/datadog-go v3.2.0+incompatible
+github.com/DataDog/datadog-go/statsd
+# github.com/asergeyev/nradix v0.0.0-20170505151046-3872ab85bb56
+github.com/asergeyev/nradix
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/go-redis/redis v6.15.6+incompatible
+github.com/go-redis/redis
+github.com/go-redis/redis/internal
+github.com/go-redis/redis/internal/consistenthash
+github.com/go-redis/redis/internal/hashtag
+github.com/go-redis/redis/internal/pool
+github.com/go-redis/redis/internal/proto
+github.com/go-redis/redis/internal/util
+# github.com/gorilla/mux v1.7.3
+github.com/gorilla/mux
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/sirupsen/logrus v1.4.2
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.4.0
+github.com/stretchr/testify/assert
+# github.com/zmap/go-iptree v0.0.0-20170831022036-1948b1097e25
+github.com/zmap/go-iptree/iptree
+# go.mozilla.org/hawk v0.0.0-20190327210923-a483e4a7047e
+go.mozilla.org/hawk
+# go.mozilla.org/mozlogrus v2.0.0+incompatible
+go.mozilla.org/mozlogrus
+# golang.org/x/sys v0.0.0-20190422165155-953cdadca894
+golang.org/x/sys/unix
+# gopkg.in/yaml.v2 v2.2.5
+gopkg.in/yaml.v2

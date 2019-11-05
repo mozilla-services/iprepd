@@ -1,4 +1,4 @@
-FROM golang:1.12
+FROM golang:1.13
 
 RUN mkdir /app && \
     chown 10001:10001 /app && \
