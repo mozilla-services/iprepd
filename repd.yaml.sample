@@ -68,8 +68,8 @@ violations:
 decay:
   points: 1
   interval: 1s
-# Exceptions control IP address exceptions in iprepd. Any IP that matches an exception will
-# not be returned by iprepd if it is requested (e.g., it will effectively have a reputation
+# Exceptions control IP address exceptions in repd. Any IP that matches an exception will
+# not be returned by repd if it is requested (e.g., it will effectively have a reputation
 # score of 100). Useful for exempting internal IP addresses.
 #
 # Note the these exceptions only apply to requests for "ip" type objects, either through
@@ -80,7 +80,7 @@ exceptions:
   file:
     - ./exception1.txt
     - ./exception2.txt
-  # If aws is set to true, iprepd will periodically query for known AWS IP address ranges and
+  # If aws is set to true, repd will periodically query for known AWS IP address ranges and
   # add these to the exception list.
   aws: false
 # versionresponse specifies a path to a file, the contents of which will be returned on a

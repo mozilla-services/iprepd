@@ -6,7 +6,7 @@ set -eo pipefail
 : "${CIRCLE_SHA1=$(git rev-parse HEAD)}"
 : "${CIRCLE_TAG=$(git describe --tags)}"
 : "${CIRCLE_PROJECT_USERNAME=mozilla-services}"
-: "${CIRCLE_PROJECT_REPONAME=iprepd}"
+: "${CIRCLE_PROJECT_REPONAME=repd}"
 : "${CIRCLE_BUILD_URL=localdev}"
 
 printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \

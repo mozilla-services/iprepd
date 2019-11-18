@@ -5,7 +5,7 @@ run: compose/docker-compose.run.yml
 	CONFIG_VOLUME=$(shell pwd) docker-compose -f compose/docker-compose.base.yml -f compose/docker-compose.run.yml up
 
 test: compose/docker-compose.test.yml
-	docker-compose -f compose/docker-compose.base.yml -f compose/docker-compose.test.yml run iprepd
+	docker-compose -f compose/docker-compose.base.yml -f compose/docker-compose.test.yml run repd
 
 
 .PHONY: build run test

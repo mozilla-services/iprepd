@@ -2,18 +2,18 @@ version: '3'
 
 services:
   redis:
-    container_name: iprepd_redis
+    container_name: repd_redis
     image: redis:3.2
     ports:
       - "6379:6379"
 
-  iprepd:
-    container_name: iprepd_app
-    image: iprepd:build
+  repd:
+    container_name: repd_app
+    image: repd:build
     build:
       context: ../.
     environment:
-      - IPREPD_TEST_REDISADDR=redis:6379
+      - REPD_TEST_REDISADDR=redis:6379
     links:
       - redis
     ports:

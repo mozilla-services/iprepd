@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// Client is the iprepd service client
+// Client is the repd service client
 type Client struct {
 	hostURL    string
 	authStr    string
@@ -86,7 +86,7 @@ func (c *Client) Dump() ([]Reputation, error) {
 	return ret, nil
 }
 
-// Heartbeat checks whether an IPrepd deployment is healthy / reachable
+// Heartbeat checks whether an repd deployment is healthy / reachable
 func (c *Client) Heartbeat() (bool, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/__heartbeat__", c.hostURL), nil)
 	if err != nil {
@@ -99,7 +99,7 @@ func (c *Client) Heartbeat() (bool, error) {
 	return (resp.StatusCode == http.StatusOK), nil
 }
 
-// LBHeartbeat checks whether an IPrepd LB is healthy / reachable
+// LBHeartbeat checks whether an repd LB is healthy / reachable
 func (c *Client) LBHeartbeat() (bool, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/__lbheartbeat__", c.hostURL), nil)
 	if err != nil {
@@ -215,7 +215,7 @@ type VersionResponse struct {
 	Build   string `json:"build"`
 }
 
-// Version retrieves the version of the IPrepd deployment
+// Version retrieves the version of the repd deployment
 func (c *Client) Version() (*VersionResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/__version__", c.hostURL), nil)
 	if err != nil {
@@ -265,7 +265,7 @@ func (c *Client) GetViolations() ([]Violation, error) {
 	return v, nil
 }
 
-// ApplyViolation submits a ViolationRequest to iprepd
+// ApplyViolation submits a ViolationRequest to repd
 func (c *Client) ApplyViolation(vr *ViolationRequest) error {
 	if vr == nil {
 		return errors.New(clientErrViolationRequestNil)
@@ -302,7 +302,7 @@ func (c *Client) ApplyViolation(vr *ViolationRequest) error {
 	return nil
 }
 
-// BatchApplyViolation submits a batch of ViolationRequests to iprepd
+// BatchApplyViolation submits a batch of ViolationRequests to repd
 func (c *Client) BatchApplyViolation(typ string, vrs []ViolationRequest) error {
 	if typ == "" {
 		return errors.New(clientErrObjectTypeEmpty)

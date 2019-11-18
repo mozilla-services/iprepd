@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"bufio"

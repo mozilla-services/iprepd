@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"fmt"
@@ -84,7 +84,7 @@ func (cfg *serverCfg) getViolation(v string) *Violation {
 var sruntime serverRuntime
 
 func init() {
-	mozlogrus.Enable("iprepd")
+	mozlogrus.Enable("repd")
 	rand.Seed(time.Now().Unix())
 }
 
@@ -109,7 +109,7 @@ func loadCfg(confpath string) (ret serverCfg, err error) {
 	return ret, ret.validate()
 }
 
-// StartDaemon starts a new instance of iprepd using configuration file confpath.
+// StartDaemon starts a new instance of repd using configuration file confpath.
 func StartDaemon(confpath string) {
 	log.Infof("starting daemon")
 

@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"time"
@@ -18,7 +18,7 @@ func newStatsdClient(cfg serverCfg) (*statsdClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.Namespace = "iprepd_server."
+	c.Namespace = "repd_server."
 
 	return &statsdClient{client: c}, nil
 }

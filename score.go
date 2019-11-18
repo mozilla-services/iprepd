@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"encoding/json"
@@ -129,7 +129,7 @@ func (r *Reputation) applyDecay() error {
 
 // Violation describes a violation penalty that can be applied to an object.
 type Violation struct {
-	// Name of violation as specified in iprepd cfg
+	// Name of violation as specified in repd cfg
 	Name string `json:"name"`
 
 	// Penalty is how many points a reputation will be decreased by if this

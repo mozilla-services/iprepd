@@ -1,6 +1,6 @@
-# iprepd
+# repd
 
-iprepd is a centralized reputation daemon that can be used to store reputation information
+repd is a centralized reputation daemon that can be used to store reputation information
 for various objects such as IP addresses and retrieve reputation scores for the objects.
 
 The project initially focused on managing reputation information for only IP addresses, but
@@ -12,30 +12,30 @@ mechanism. Multiple instances of the daemon can be deployed using the same Redis
 
 ## Configuration
 
-Configuration is done through the configuration file, by default `./iprepd.yaml`. The location
+Configuration is done through the configuration file, by default `./repd.yaml`. The location
 can be overridden with the `-c` flag.
 
-See [iprepd.yaml.sample](./iprepd.yaml.sample) for an example configuration.
+See [repd.yaml.sample](./repd.yaml.sample) for an example configuration.
 
 ## Building the Docker image
 
 ```bash
 ./write_version_json.sh
-docker build -t iprepd:latest .
+docker build -t repd:latest .
 ```
 
-Docker images are also [published](https://hub.docker.com/r/mozilla/iprepd/).
+Docker images are also [published](https://hub.docker.com/r/mozilla/repd/).
 
 ```bash
-docker pull mozilla/iprepd:latest
-docker run -ti --rm -v `pwd`/iprepd.yaml:/app/iprepd.yaml mozilla/iprepd:latest
+docker pull mozilla/repd:latest
+docker run -ti --rm -v `pwd`/repd.yaml:/app/repd.yaml mozilla/repd:latest
 ```
 
 ## API
 
 ### Authentication
 
-iprepd supports two forms of authentication. Clients can authenticate to the service using either
+repd supports two forms of authentication. Clients can authenticate to the service using either
 standard API keys, or by using [Hawk authentication](https://github.com/hapijs/hawk).
 
 Standard API key authentication can be configured in the configuration file in the `apikey` (for
@@ -53,7 +53,7 @@ header in the `Authorization` header when making a request.
 
 Request the reputation for an object of a given type. Responds with 200 and a JSON
 document describing the reputation if found. Responds with a 404 if the object is
-unknown to iprepd, or is in the exceptions list.
+unknown to repd, or is in the exceptions list.
 
 The current supported object types are `ip` for an IP address and `email` for an
 email address.
@@ -147,7 +147,7 @@ error will be logged.
 
 #### GET /violations
 
-Returns violations configured in iprepd in a JSON document.
+Returns violations configured in repd in a JSON document.
 
 ##### Response body
 
@@ -189,7 +189,7 @@ Return version data.
 
 ### Legacy endpoints
 
-The initial version of iprepd focused purely on reputation management for IP addresses.
+The initial version of repd focused purely on reputation management for IP addresses.
 Requests to the legacy endpoints deal only with IP addresses, and are intended to maintain
 compatibility with older clients.
 
@@ -199,7 +199,7 @@ standard endpoints with a type set to `ip`.
 #### GET /10.0.0.1
 
 Request the reputation for an IP address. Responds with 200 and a JSON document describing the
-reputation if found. Responds with a 404 if the IP address is unknown to iprepd, or is in the
+reputation if found. Responds with a 404 if the IP address is unknown to repd, or is in the
 exceptions list.
 
 The response body may include a `decayafter` element if the reputation for the address was changed

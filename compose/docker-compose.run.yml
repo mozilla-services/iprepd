@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  iprepd:
+  repd:
     volumes:
       - '$CONFIG_VOLUME:/app/config/'
-    command: bash -c '/app/bin/iprepd -c /app/config/iprepd.yaml'
+    command: bash -c '/app/bin/repd -c /app/config/repd.yaml'

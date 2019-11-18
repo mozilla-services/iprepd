@@ -1,4 +1,4 @@
-package iprepd
+package repd
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ const (
 	testBuild   = "testing"
 	testCommit  = "testcommit"
 	testVersion = "testversion"
-	testSource  = "https://github.com/mozilla-services/iprepd"
+	testSource  = "https://github.com/mozilla-services/repd"
 )
 
 func baseTest() error {
@@ -80,7 +80,7 @@ func baseTest() error {
 }
 
 func TestLoadSampleConfig(t *testing.T) {
-	_, err := loadCfg("./iprepd.yaml.sample")
+	_, err := loadCfg("./repd.yaml.sample")
 	assert.Nil(t, err)
 }
 
@@ -95,7 +95,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-	renv := os.Getenv("IPREPD_TEST_REDISADDR")
+	renv := os.Getenv("REPD_TEST_REDISADDR")
 	if renv != "" {
 		tcfg.Redis.Addr = renv
 	}
