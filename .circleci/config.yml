@@ -1,19 +1,10 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: circleci/golang:1.10
-
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    machine:
+      docker_layer_caching: true
     steps:
       - checkout
-      - run:
-          name: Install Docker Compose
-          command: |
-            curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-            chmod +x ~/docker-compose
-            sudo mv ~/docker-compose /usr/local/bin/docker-compose
-      - setup_remote_docker
       - run:
           name: Write version.json
           command: ./write_version_json.sh
