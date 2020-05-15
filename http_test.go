@@ -499,254 +499,6 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 }
 
-func TestHandlersLegacy(t *testing.T) {
-	assert.Nil(t, baseTest())
-	sruntime.cfg.Auth.DisableAuth = true
-	h := mwHandler(newRouter())
-
-	// request reputation for a stored ip
-	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.0.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res := recorder.Result()
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
-	buf, err := ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	var r Reputation
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.0.1", r.IP)
-	assert.Equal(t, 50, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-	// The object and type fields should also be set on request to the legacy endpoint
-	// here
-	assert.Equal(t, "192.168.0.1", r.Object)
-	assert.Equal(t, TypeIP, r.Type)
-
-	// request reputation for a stored legacy format entry
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/254.254.254.254", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "254.254.254.254", r.IP)
-	assert.Equal(t, 40, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-	// The object and type fields should also be set on request to the legacy endpoint
-	// here
-	assert.Equal(t, "254.254.254.254", r.Object)
-	assert.Equal(t, TypeIP, r.Type)
-
-	// request reputation for an unknown ip
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.2", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-
-	// request reputation for invalid ip, should get a 404 as it will not match
-	// the handler regex
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/255.2555.255.255", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-
-	// store reputation for an ip
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.20", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-	recorder = httptest.NewRecorder()
-	buf2 := "{\"ip\": \"192.168.2.20\", \"reputation\": 25}"
-	req = httptest.NewRequest("PUT", "/192.168.2.20", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.20", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.2.20", r.IP)
-	assert.Equal(t, 25, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-	assert.Equal(t, "192.168.2.20", r.Object)
-	assert.Equal(t, TypeIP, r.Type)
-
-	// try to store invalid reputation score
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.2.20\", \"reputation\": 500}"
-	req = httptest.NewRequest("PUT", "/192.168.2.20", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-
-	// delete entry
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("DELETE", "/192.168.2.20", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.20", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-
-	// put violation
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.3.1\", \"violation\": \"violation1\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.3.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.3.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.3.1", r.IP)
-	assert.Equal(t, 95, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-	assert.True(t, r.DecayAfter.IsZero())
-	assert.Equal(t, "192.168.3.1", r.Object)
-	assert.Equal(t, TypeIP, r.Type)
-
-	// put violations
-	recorder = httptest.NewRecorder()
-	buf2 = "[{\"ip\": \"192.168.4.1\", \"violation\": \"violation1\"}," +
-		"{\"ip\": \"192.168.5.1\", \"violation\": \"violation2\"}]"
-	req = httptest.NewRequest("PUT", "/violations", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.4.1", r.IP)
-	assert.Equal(t, 95, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.5.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.5.1", r.IP)
-	assert.Equal(t, 50, r.Reputation)
-	assert.Equal(t, false, r.Reviewed)
-
-	// put violation with recovery suppression
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\",\"suppress_recovery\":120}"
-	dt := time.Now().UTC().Add(time.Second * time.Duration(120))
-	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.6.1", r.IP)
-	assert.Equal(t, 95, r.Reputation)
-	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
-
-	// ensure recovery suppression remains after a subsequent violation without suppression indicated
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.6.1", r.IP)
-	assert.Equal(t, 90, r.Reputation)
-	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
-
-	// apply suppression that is less than what is currently configured, should not change entry
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"violation1\", \"suppress_recovery\":5}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.6.1", r.IP)
-	assert.Equal(t, 85, r.Reputation)
-	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
-
-	// apply suppression that is greater than what is currently configured but with a bad violation
-	// name, should not change entry
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.6.1\", \"violation\": \"unknown_violation5\", \"suppress_recovery\":99999}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.6.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.6.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	res = recorder.Result()
-	buf, err = ioutil.ReadAll(res.Body)
-	assert.Nil(t, err)
-	err = json.Unmarshal(buf, &r)
-	assert.Nil(t, err)
-	assert.Equal(t, "192.168.6.1", r.IP)
-	assert.Equal(t, 85, r.Reputation)
-	assert.InDelta(t, dt.Unix(), r.DecayAfter.Unix(), 5)
-
-	// put violation with bad recovery suppression
-	recorder = httptest.NewRecorder()
-	buf2 = "{\"ip\": \"192.168.7.1\", \"violation\": \"violation1\",\"suppress_recovery\":999999999}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.7.1", bytes.NewReader([]byte(buf2)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusBadRequest, recorder.Code)
-}
-
 func TestViolationDecreaseLimit(t *testing.T) {
 	assert.Nil(t, baseTest())
 	sruntime.cfg.Auth.DisableAuth = true
@@ -755,13 +507,13 @@ func TestViolationDecreaseLimit(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		recorder := httptest.NewRecorder()
 		buf := "{\"ip\": \"192.168.3.1\", \"violation\": \"violation1\"}"
-		req := httptest.NewRequest("PUT", "/violations/192.168.3.1", bytes.NewReader([]byte(buf)))
+		req := httptest.NewRequest("PUT", "/violations/type/ip/192.168.3.1", bytes.NewReader([]byte(buf)))
 		req.Header.Set("Content-Type", "application/json")
 		h.ServeHTTP(recorder, req)
 		assert.Equal(t, http.StatusOK, recorder.Code)
 	}
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.3.1", nil)
+	req := httptest.NewRequest("GET", "/type/ip/192.168.3.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -777,13 +529,13 @@ func TestViolationDecreaseLimit(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		recorder = httptest.NewRecorder()
 		buf2 := "{\"ip\": \"192.168.3.1\", \"violation\": \"violation1\"}"
-		req = httptest.NewRequest("PUT", "/violations/192.168.3.1", bytes.NewReader([]byte(buf2)))
+		req = httptest.NewRequest("PUT", "/violations/type/ip/192.168.3.1", bytes.NewReader([]byte(buf2)))
 		req.Header.Set("Content-Type", "application/json")
 		h.ServeHTTP(recorder, req)
 		assert.Equal(t, http.StatusOK, recorder.Code)
 	}
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.3.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.3.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -797,12 +549,12 @@ func TestViolationDecreaseLimit(t *testing.T) {
 
 	recorder = httptest.NewRecorder()
 	buf2 := "{\"ip\": \"192.168.4.1\", \"violation\": \"violation2\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf2)))
+	req = httptest.NewRequest("PUT", "/violations/type/ip/192.168.4.1", bytes.NewReader([]byte(buf2)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -817,12 +569,12 @@ func TestViolationDecreaseLimit(t *testing.T) {
 	// send the same violation again, which shouldn't change the reputation
 	recorder = httptest.NewRecorder()
 	buf2 = "{\"ip\": \"192.168.4.1\", \"violation\": \"violation2\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf2)))
+	req = httptest.NewRequest("PUT", "/violations/type/ip/192.168.4.1", bytes.NewReader([]byte(buf2)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -837,19 +589,19 @@ func TestViolationDecreaseLimit(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		recorder := httptest.NewRecorder()
 		buf := "{\"ip\": \"192.168.5.1\", \"violation\": \"violation1\"}"
-		req := httptest.NewRequest("PUT", "/violations/192.168.5.1", bytes.NewReader([]byte(buf)))
+		req := httptest.NewRequest("PUT", "/violations/type/ip/192.168.5.1", bytes.NewReader([]byte(buf)))
 		req.Header.Set("Content-Type", "application/json")
 		h.ServeHTTP(recorder, req)
 		assert.Equal(t, http.StatusOK, recorder.Code)
 	}
 	recorder = httptest.NewRecorder()
 	buf2 = "{\"ip\": \"192.168.5.1\", \"violation\": \"violation2\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.5.1", bytes.NewReader([]byte(buf2)))
+	req = httptest.NewRequest("PUT", "/violations/type/ip/192.168.5.1", bytes.NewReader([]byte(buf2)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.5.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.5.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -879,23 +631,6 @@ func TestExceptions(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 }
 
-func TestExceptionsLegacy(t *testing.T) {
-	assert.Nil(t, baseTest())
-	sruntime.cfg.Auth.DisableAuth = true
-	h := mwHandler(newRouter())
-
-	recorder := httptest.NewRecorder()
-	buf := "{\"ip\": \"192.168.1.1\", \"violation\": \"violation2\"}"
-	req := httptest.NewRequest("PUT", "/violations/192.168.1.1", bytes.NewReader([]byte(buf)))
-	req.Header.Set("Content-Type", "application/json")
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusOK, recorder.Code)
-	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.1.1", nil)
-	h.ServeHTTP(recorder, req)
-	assert.Equal(t, http.StatusNotFound, recorder.Code)
-}
-
 func TestDecay(t *testing.T) {
 	assert.Nil(t, baseTest())
 	sruntime.cfg.Auth.DisableAuth = true
@@ -912,7 +647,7 @@ func TestDecay(t *testing.T) {
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req := httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -928,7 +663,7 @@ func TestDecay(t *testing.T) {
 	sruntime.cfg.Decay.Points = 1
 	sruntime.cfg.Decay.Interval = time.Second
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -942,7 +677,7 @@ func TestDecay(t *testing.T) {
 
 	sruntime.cfg.Decay.Points = 50
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -973,7 +708,7 @@ func TestDecayAfter(t *testing.T) {
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req := httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -990,7 +725,7 @@ func TestDecayAfter(t *testing.T) {
 	sruntime.cfg.Decay.Points = 1
 	sruntime.cfg.Decay.Interval = time.Second
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -1021,7 +756,7 @@ func TestDecayAfterPast(t *testing.T) {
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req := httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -1037,7 +772,7 @@ func TestDecayAfterPast(t *testing.T) {
 	sruntime.cfg.Decay.Points = 1
 	sruntime.cfg.Decay.Interval = time.Second
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.2.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.2.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -1063,16 +798,16 @@ func TestUnknownViolation(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	buf2 := "[{\"ip\": \"192.168.4.1\", \"violation\": \"unknownviolation\"}," +
 		"{\"ip\": \"192.168.5.1\", \"violation\": \"violation2\"}]"
-	req := httptest.NewRequest("PUT", "/violations", bytes.NewReader([]byte(buf2)))
+	req := httptest.NewRequest("PUT", "/violations/type/ip", bytes.NewReader([]byte(buf2)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.5.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.5.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -1095,12 +830,12 @@ func TestReviewedReset(t *testing.T) {
 	// to 100.
 	recorder := httptest.NewRecorder()
 	buf := "{\"ip\": \"192.168.4.1\", \"violation\": \"violation1\"}"
-	req := httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf)))
+	req := httptest.NewRequest("PUT", "/violations/type/ip/192.168.4.1", bytes.NewReader([]byte(buf)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()
@@ -1118,12 +853,12 @@ func TestReviewedReset(t *testing.T) {
 	r.Reviewed = true
 	buf2, err = json.Marshal(r)
 	assert.Nil(t, err)
-	req = httptest.NewRequest("PUT", "/192.168.4.1", bytes.NewReader([]byte(buf2)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.4.1", bytes.NewReader([]byte(buf2)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -1145,7 +880,7 @@ func TestReviewedReset(t *testing.T) {
 	err = sruntime.redis.set(r.IP, buf, 0).Err()
 	assert.Nil(t, err)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -1160,7 +895,7 @@ func TestReviewedReset(t *testing.T) {
 	// Apply the violation again now that the IP has decayed to 100
 	recorder = httptest.NewRecorder()
 	buf = "{\"ip\": \"192.168.4.1\", \"violation\": \"violation1\"}"
-	req = httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/violations/type/ip/192.168.4.1", bytes.NewReader([]byte(buf)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
@@ -1169,7 +904,7 @@ func TestReviewedReset(t *testing.T) {
 	sruntime.cfg.Decay.Points = 0
 	sruntime.cfg.Decay.Interval = time.Minute
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -1189,12 +924,12 @@ func TestZeroViolation(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	buf := "{\"ip\": \"192.168.4.1\", \"violation\": \"violation3\"}"
-	req := httptest.NewRequest("PUT", "/violations/192.168.4.1", bytes.NewReader([]byte(buf)))
+	req := httptest.NewRequest("PUT", "/violations/type/ip/192.168.4.1", bytes.NewReader([]byte(buf)))
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.4.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res := recorder.Result()

@@ -101,20 +101,6 @@ func newRouter() *mux.Router {
 	r.HandleFunc("/__heartbeat__", httpHeartbeat).Methods("GET")
 	r.HandleFunc("/__version__", httpVersion).Methods("GET")
 
-	// Legacy IP reputation endpoints
-	//
-	// To maintain compatibility with previous API versions, wrap legacy API
-	// calls to add the type field and route to the correct handler
-	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpGetReputation), false)).Methods("GET")
-	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpPutReputation), true)).Methods("PUT")
-	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpDeleteReputation), true)).Methods("DELETE")
-	r.HandleFunc("/violations/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
-		auth(wrapLegacyIPRequest(httpPutViolation), true)).Methods("PUT")
-	r.HandleFunc("/violations", auth(wrapLegacyIPRequest(httpPutViolations), true)).Methods("PUT")
-
 	r.HandleFunc("/violations", auth(httpGetViolations, false)).Methods("GET")
 	r.HandleFunc("/dump", auth(httpGetAllReputation, true)).Methods("GET")
 	r.HandleFunc("/type/{type:[a-z]{1,12}}/{value}", auth(httpGetReputation, false)).Methods("GET")
@@ -128,15 +114,6 @@ func newRouter() *mux.Router {
 
 func startAPI() error {
 	return http.ListenAndServe(sruntime.cfg.Listen, mwHandler(newRouter()))
-}
-
-func wrapLegacyIPRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := mux.Vars(r)
-		m["type"] = TypeIP
-		mux.SetURLVars(r, m)
-		rf(w, r)
-	}
 }
 
 func hasValidType(r *http.Request) error {

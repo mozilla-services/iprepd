@@ -17,33 +17,33 @@ func TestAuth(t *testing.T) {
 
 	// auth'd endpoint, should fail
 	recorder := httptest.NewRecorder()
-	h.ServeHTTP(recorder, httptest.NewRequest("GET", "/192.168.0.1", nil))
+	h.ServeHTTP(recorder, httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil))
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// valid api key
 	recorder = httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req := httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "APIKey key1")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	// invalid api key
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "APIKey key1invalid")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// zero length api key
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "APIKey ")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// valid Read-Only API key for write-not-required endpoint
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "APIKey rokey1")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
@@ -51,7 +51,7 @@ func TestAuth(t *testing.T) {
 	// valid Read-Only API key for write-required endpoint
 	recorder = httptest.NewRecorder()
 	buf := "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
-	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	req.Header.Set("Authorization", "APIKey rokey1")
 	req.Header.Set("Content-Type", "application/json")
 	h.ServeHTTP(recorder, req)
@@ -59,7 +59,7 @@ func TestAuth(t *testing.T) {
 
 	// valid hawk header
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	auth := hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
@@ -71,7 +71,7 @@ func TestAuth(t *testing.T) {
 
 	// valid Read-Only hawk for a write-not-required endpoint
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "roroot",
 		Key:  "rotoor",
@@ -84,7 +84,7 @@ func TestAuth(t *testing.T) {
 	// valid Read-Only hawk for a write-required endpoint
 	recorder = httptest.NewRecorder()
 	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
-	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "roroot",
 		Key:  "rotoor",
@@ -100,7 +100,7 @@ func TestAuth(t *testing.T) {
 
 	// invalid hawk id
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "invalid",
 		Key:  "toor",
@@ -112,7 +112,7 @@ func TestAuth(t *testing.T) {
 
 	// invalid hawk secret
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "invalid",
@@ -125,7 +125,7 @@ func TestAuth(t *testing.T) {
 	// valid hawk credentials with a content-type set but no request body on GET,
 	// verify the request is rejected
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
@@ -139,7 +139,7 @@ func TestAuth(t *testing.T) {
 	// valid hawk put with a request body
 	recorder = httptest.NewRecorder()
 	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
-	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
@@ -155,7 +155,7 @@ func TestAuth(t *testing.T) {
 
 	// valid hawk creds in a put with a request body, but missing a content-type
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
@@ -170,7 +170,7 @@ func TestAuth(t *testing.T) {
 
 	// valid hawk creds in a put with a request body, missing a payload hash
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("PUT", "/192.168.0.1", bytes.NewReader([]byte(buf)))
+	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
 		Key:  "toor",
@@ -183,21 +183,21 @@ func TestAuth(t *testing.T) {
 
 	// invalid hawk header
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "Hawk invalid")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// zero length hawk header
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", "Hawk ")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 	// empty authorization header
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/192.168.0.1", nil)
+	req = httptest.NewRequest("GET", "/type/ip/192.168.0.1", nil)
 	req.Header.Set("Authorization", " ")
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code)
