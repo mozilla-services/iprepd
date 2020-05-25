@@ -18,14 +18,6 @@ type Reputation struct {
 	// Type describes the type of object the reputation entry is for
 	Type string `json:"type"`
 
-	// IP is a legacy field that is associated with reputation requests for IP
-	// addresses, and is intended to maintain reverse compatibility.
-	//
-	// For responses from the API for IP address objects, Object and IP will
-	// be set to the same value. For reputation update requests for IP type
-	// objects, either can be used but Object will take precedence.
-	IP string `json:"ip,omitempty"`
-
 	// Reputation is the reputation score for the object, ranging from 0 to
 	// 100 where 100 indicates no violations have been applied to it.
 	Reputation int `json:"reputation"`
@@ -52,9 +44,6 @@ func (r *Reputation) Validate() error {
 	}
 	if r.Type == "" {
 		return fmt.Errorf("reputation entry missing required field type")
-	}
-	if r.Type != TypeIP && r.IP != "" {
-		return fmt.Errorf("ip field set and type is not ip")
 	}
 	if r.Reputation < 0 || r.Reputation > 100 {
 		return fmt.Errorf("invalid reputation score %v", r.Reputation)
@@ -203,19 +192,6 @@ func repGet(typestr string, valstr string) (ret Reputation, err error) {
 	err = json.Unmarshal(buf, &ret)
 	if err != nil {
 		return
-	}
-
-	// Apply some compatibility fixups here for IP type requests
-	if typestr == TypeIP {
-		if ret.Object == "" && ret.IP != "" {
-			// If we have an IP field set but object is unset, set the object field
-			// to IP as this is likely a legacy entry.
-			ret.Object = ret.IP
-		} else {
-			// Otherwise, just set the IP field to the value of the object field
-			// to maintain compatibility with older clients
-			ret.IP = ret.Object
-		}
 	}
 
 	// If the type field is unset in the stored entry, set it to the type that was

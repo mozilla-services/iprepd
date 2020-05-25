@@ -50,7 +50,7 @@ func TestAuth(t *testing.T) {
 
 	// valid Read-Only API key for write-required endpoint
 	recorder = httptest.NewRecorder()
-	buf := "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	buf := "{\"object\": \"192.168.0.1\", \"type\": \"ip\", \"reputation\": 50}"
 	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	req.Header.Set("Authorization", "APIKey rokey1")
 	req.Header.Set("Content-Type", "application/json")
@@ -83,7 +83,7 @@ func TestAuth(t *testing.T) {
 
 	// valid Read-Only hawk for a write-required endpoint
 	recorder = httptest.NewRecorder()
-	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	buf = "{\"object\": \"192.168.0.1\", \"type\": \"ip\", \"reputation\": 50}"
 	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "roroot",
@@ -138,7 +138,7 @@ func TestAuth(t *testing.T) {
 
 	// valid hawk put with a request body
 	recorder = httptest.NewRecorder()
-	buf = "{\"ip\": \"192.168.0.1\", \"reputation\": 50}"
+	buf = "{\"object\": \"192.168.0.1\", \"type\": \"ip\", \"reputation\": 50}"
 	req = httptest.NewRequest("PUT", "/type/ip/192.168.0.1", bytes.NewReader([]byte(buf)))
 	auth = hawk.NewRequestAuth(req, &hawk.Credentials{
 		ID:   "root",
