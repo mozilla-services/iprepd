@@ -39,6 +39,10 @@ auth:
     rotestuser: rotest
   # Set disableauth to true to turn of all authentication.
   disableauth: false
+# The prefix to use with IPv6 address reputation updates or lookups. For example, if a reputation
+# is set on an IPv6 address it will apply to all addresses within the prefix. We default to /64,
+# which is an end-user allocation size.
+ip6prefix: 64
 # Configure violations that can be used when submitting a violation for an object
 # in this section.
 #

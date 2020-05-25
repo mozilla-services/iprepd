@@ -53,26 +53,20 @@ func baseTest() error {
 		return err
 	}
 	r = Reputation{
-		Object:     "usr@mozilla.com",
-		Type:       TypeEmail,
+		Object:     "2001:db8:a0b:12f0::1",
+		Type:       TypeIP,
 		Reputation: 50,
 	}
 	err = r.set()
 	if err != nil {
 		return err
 	}
-	// Add a legacy format reputation entry for testing, needs to be added
-	// manually to bypass the insertion validator
 	r = Reputation{
-		IP:          "254.254.254.254",
-		Reputation:  40,
-		LastUpdated: time.Now().UTC(),
+		Object:     "usr@mozilla.com",
+		Type:       TypeEmail,
+		Reputation: 50,
 	}
-	buf, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-	err = sruntime.redis.set(r.IP, buf, time.Hour*336).Err()
+	err = r.set()
 	if err != nil {
 		return err
 	}
@@ -122,6 +116,7 @@ func TestMain(m *testing.M) {
 		{"violation2", 50, 50},
 		{"violation3", 0, 0},
 	}
+	sruntime.cfg.IP6Prefix = 64
 	loadExceptions()
 	os.Exit(m.Run())
 }

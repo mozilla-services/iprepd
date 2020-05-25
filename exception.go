@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -97,6 +98,12 @@ func loadExceptions() {
 }
 
 func isException(ipstr string) (bool, error) {
+	// XXX See if the input contains both a . and a : character (IPv4 mapped IPv6 address
+	// using dot notation). If so, don't run a check. These addresses are not currently
+	// supported in the exception code.
+	if strings.Contains(ipstr, ":") && strings.Contains(ipstr, ".") {
+		return false, nil
+	}
 	treeLock.Lock()
 	_, f, err := activeTree.GetByString(ipstr)
 	treeLock.Unlock()

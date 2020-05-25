@@ -66,9 +66,9 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
-	// request reputation for stored legacy format entry
+	// request reputation for a stored ipv6 ip
 	recorder = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/type/ip/254.254.254.254", nil)
+	req = httptest.NewRequest("GET", "/type/ip/2001:db8:a0b:12f0::1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	res = recorder.Result()
@@ -77,16 +77,38 @@ func TestHandlers(t *testing.T) {
 	assert.Nil(t, err)
 	err = json.Unmarshal(buf, &r)
 	assert.Nil(t, err)
-	assert.Equal(t, "254.254.254.254", r.Object)
+	assert.Equal(t, "2001:db8:a0b:12f0::", r.Object)
 	assert.Equal(t, TypeIP, r.Type)
-	assert.Equal(t, 40, r.Reputation)
+	assert.Equal(t, 50, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
-	// IP field should also be set
-	assert.Equal(t, "254.254.254.254", r.IP)
+
+	// request reputation for a stored ipv6 ip that wasn't the original address
+	// added but within our test ipv6 subnet prefix
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/2001:db8:a0b:12f0:0:aaaa::1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "2001:db8:a0b:12f0::", r.Object)
+	assert.Equal(t, TypeIP, r.Type)
+	assert.Equal(t, 50, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
 
 	// request reputation for an unknown ip
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/type/ip/192.168.0.2", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+
+	// request reputation for an unknown ipv6 ip
+	recorder = httptest.NewRecorder()
+	// Outside the test datasets collapsed subnet range
+	req = httptest.NewRequest("GET", "/type/ip/2001:db8:a0b:12f1::1", nil)
 	h.ServeHTTP(recorder, req)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
@@ -141,6 +163,78 @@ func TestHandlers(t *testing.T) {
 	assert.Equal(t, 25, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 
+	// store reputation for an ipv6 ip
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/2001:db8:aaa::f", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"object\": \"2001:db8:aaa::f\", \"type\": \"ip\", \"reputation\": 50}"
+	req = httptest.NewRequest("PUT", "/type/ip/2001:db8:aaa::f", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/2001:db8:aaa::f", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "2001:db8:aaa::", r.Object)
+	assert.Equal(t, TypeIP, r.Type)
+	assert.Equal(t, 50, r.Reputation)
+
+	// store reputation for ipv4 mapped ipv6 ip
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/::ffff:101:101", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"object\": \"::ffff:1.2.3.4\", \"type\": \"ip\", \"reputation\": 50}"
+	req = httptest.NewRequest("PUT", "/type/ip/::ffff:101:101", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/::ffff:101:101", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "1.1.1.1", r.Object)
+	assert.Equal(t, TypeIP, r.Type)
+	assert.Equal(t, 50, r.Reputation)
+
+	// store reputation for ipv4 mapped ipv6 ip (dot notation)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/::ffff:1.1.1.2", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	recorder = httptest.NewRecorder()
+	buf2 = "{\"object\": \"::ffff:1.2.3.4\", \"type\": \"ip\", \"reputation\": 50}"
+	req = httptest.NewRequest("PUT", "/type/ip/::ffff:1.1.1.2", bytes.NewReader([]byte(buf2)))
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/type/ip/::ffff:1.1.1.2", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res = recorder.Result()
+	buf, err = ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "1.1.1.2", r.Object)
+	assert.Equal(t, TypeIP, r.Type)
+	assert.Equal(t, 50, r.Reputation)
+
 	// store reputation for an email address
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/type/email/riker@mozilla.com", nil)
@@ -194,7 +288,7 @@ func TestHandlers(t *testing.T) {
 	var reputations []Reputation
 	err = json.Unmarshal(buf, &reputations)
 	assert.Nil(t, err)
-	assert.Equal(t, 6, len(reputations))
+	assert.Equal(t, 9, len(reputations))
 	c := 0
 	for _, rep := range reputations {
 		if rep.Object == "192.168.2.20" {
@@ -223,7 +317,7 @@ func TestHandlers(t *testing.T) {
 		}
 		assert.Equal(t, false, rep.Reviewed)
 	}
-	assert.Equal(t, 4, c)
+	assert.Equal(t, 3, c)
 
 	// delete entry
 	recorder = httptest.NewRecorder()
@@ -643,7 +737,8 @@ func TestDecay(t *testing.T) {
 	}
 	buf, err := json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.set(r.IP, buf, 0).Err()
+	kv, _ := keyFromTypeAndValue(TypeIP, "192.168.2.1")
+	err = sruntime.redis.set(kv, buf, 0).Err()
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
@@ -704,7 +799,8 @@ func TestDecayAfter(t *testing.T) {
 	}
 	buf, err := json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.set(r.IP, buf, 0).Err()
+	kv, _ := keyFromTypeAndValue(TypeIP, "192.168.2.1")
+	err = sruntime.redis.set(kv, buf, 0).Err()
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
@@ -752,7 +848,8 @@ func TestDecayAfterPast(t *testing.T) {
 	}
 	buf, err := json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.set(r.IP, buf, 0).Err()
+	kv, _ := keyFromTypeAndValue(TypeIP, "192.168.2.1")
+	err = sruntime.redis.set(kv, buf, 0).Err()
 
 	// initial request with default (no) decay
 	recorder := httptest.NewRecorder()
@@ -877,7 +974,8 @@ func TestReviewedReset(t *testing.T) {
 	r.LastUpdated = time.Now().Add(-1 * (time.Second * 10)).UTC()
 	buf2, err = json.Marshal(r)
 	assert.Nil(t, err)
-	err = sruntime.redis.set(r.IP, buf, 0).Err()
+	kv, _ := keyFromTypeAndValue(TypeIP, "192.168.4.1")
+	err = sruntime.redis.set(kv, buf, 0).Err()
 	assert.Nil(t, err)
 	recorder = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/type/ip/192.168.4.1", nil)
