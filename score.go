@@ -3,6 +3,9 @@ package iprepd
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,14 +17,6 @@ type Reputation struct {
 
 	// Type describes the type of object the reputation entry is for
 	Type string `json:"type"`
-
-	// IP is a legacy field that is associated with reputation requests for IP
-	// addresses, and is intended to maintain reverse compatibility.
-	//
-	// For responses from the API for IP address objects, Object and IP will
-	// be set to the same value. For reputation update requests for IP type
-	// objects, either can be used but Object will take precedence.
-	IP string `json:"ip,omitempty"`
 
 	// Reputation is the reputation score for the object, ranging from 0 to
 	// 100 where 100 indicates no violations have been applied to it.
@@ -50,27 +45,68 @@ func (r *Reputation) Validate() error {
 	if r.Type == "" {
 		return fmt.Errorf("reputation entry missing required field type")
 	}
-	if r.Type != TypeIP && r.IP != "" {
-		return fmt.Errorf("ip field set and type is not ip")
-	}
 	if r.Reputation < 0 || r.Reputation > 100 {
 		return fmt.Errorf("invalid reputation score %v", r.Reputation)
 	}
 	return nil
 }
 
+func normalizedObjectValue(typestr string, valstr string) (string, error) {
+	if typestr == TypeIP {
+		ip := net.ParseIP(valstr)
+		if ip == nil {
+			return "", fmt.Errorf("cannot normalize invalid ip address")
+		}
+		v4 := ip.To4()
+		if v4 == nil {
+			// Mask the address to collapse it to our configured IPv6 address
+			// width.
+			return ip.Mask(net.CIDRMask(sruntime.cfg.IP6Prefix, 128)).String(), nil
+		} else {
+			// See if the address contains a : character; it's possible this is an
+			// IPv4 mapped IPv6 address. If so convert it and we will store it as if
+			// it were submitted as IPv4.
+			if strings.Contains(valstr, ":") {
+				return v4.String(), nil
+			}
+		}
+	}
+	return valstr, nil
+}
+
 func keyFromTypeAndValue(typestr string, valstr string) (string, error) {
 	if typestr == "" || valstr == "" {
 		return "", fmt.Errorf("type or value was not set")
 	}
-	if typestr == TypeIP {
-		return valstr, nil
+	// At this point we assume the validators have run, and we know we have a valid
+	// type and a value that properly corresponds to that type.
+	//
+	// We want to derive the correct key name to use for that type and value. Generally
+	// this is simply a concatenation of the type and value string, however in certain
+	// special cases such as with IPv6 addresses, additional information is encoded into
+	// the key name.
+	buf, err := normalizedObjectValue(typestr, valstr)
+	if err != nil {
+		return "", err
 	}
-	return typestr + " " + valstr, nil
+	if typestr == TypeIP {
+		if net.ParseIP(valstr).To4() == nil {
+			// Postfix the address value in the key with a separator and the configured
+			// IPv6 subnet width; this will invalidate all existing IPv6 reputation
+			// values if the configuration value is changed.
+			return typestr + "#" + buf +
+				"#" + strconv.Itoa(sruntime.cfg.IP6Prefix), nil
+		}
+	}
+	return typestr + "#" + buf, nil
 }
 
 func (r *Reputation) set() error {
 	err := r.Validate()
+	if err != nil {
+		return err
+	}
+	r.Object, err = normalizedObjectValue(r.Type, r.Object)
 	if err != nil {
 		return err
 	}
@@ -156,19 +192,6 @@ func repGet(typestr string, valstr string) (ret Reputation, err error) {
 	err = json.Unmarshal(buf, &ret)
 	if err != nil {
 		return
-	}
-
-	// Apply some compatibility fixups here for IP type requests
-	if typestr == TypeIP {
-		if ret.Object == "" && ret.IP != "" {
-			// If we have an IP field set but object is unset, set the object field
-			// to IP as this is likely a legacy entry.
-			ret.Object = ret.IP
-		} else {
-			// Otherwise, just set the IP field to the value of the object field
-			// to maintain compatibility with older clients
-			ret.IP = ret.Object
-		}
 	}
 
 	// If the type field is unset in the stored entry, set it to the type that was

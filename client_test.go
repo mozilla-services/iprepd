@@ -195,9 +195,6 @@ func TestGetReputation(t *testing.T) {
 			assert.Nil(t, err, tst.Name)
 			assert.Equal(t, tst.Object, rep.Object, tst.Name)
 			assert.Equal(t, tst.ObjectType, rep.Type, tst.Name)
-			if tst.ObjectType == TypeIP {
-				assert.Equal(t, tst.Object, rep.IP, tst.Name)
-			}
 			assert.Equal(t, rep.Reputation, tst.ExpectedRep)
 			assert.Equal(t, false, rep.Reviewed, tst.Name)
 			assert.Equal(t, "0001-01-01 00:00:00 +0000 UTC", rep.DecayAfter.String(), tst.Name)

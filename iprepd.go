@@ -38,6 +38,7 @@ type serverCfg struct {
 		ROHawk      map[string]string
 		ROAPIKey    map[string]string
 	}
+	IP6Prefix  int
 	Violations []Violation
 	Decay      struct {
 		Points   int
@@ -68,6 +69,9 @@ func (cfg *serverCfg) validate() error {
 	}
 	if cfg.Redis.MinIdleConn == 0 {
 		cfg.Redis.MinIdleConn = 20
+	}
+	if cfg.IP6Prefix == 0 {
+		cfg.IP6Prefix = 64
 	}
 	return nil
 }
