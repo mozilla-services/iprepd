@@ -109,11 +109,29 @@ func newRouter() *mux.Router {
 	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}/{value}", auth(httpPutViolation, true)).Methods("PUT")
 	r.HandleFunc("/violations/type/{type:[a-z]{1,12}}", auth(httpPutViolations, true)).Methods("PUT")
 
+	// Legacy IP reputation endpoint for get ip
+	//
+	// To maintain compatibility with previous API versions, wrap legacy API
+	// calls to add the type field and route to the correct handler
+	r.HandleFunc("/{value:(?:[0-9]{1,3}\\.){3}[0-9]{1,3}}",
+		auth(wrapLegacyIPRequest(httpGetReputation), false)).Methods("GET")
+
+	r.NotFoundHandler = http.HandlerFunc(defaultHandler)
+
 	return r
 }
 
 func startAPI() error {
 	return http.ListenAndServe(sruntime.cfg.Listen, mwHandler(newRouter()))
+}
+
+func wrapLegacyIPRequest(rf func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m := mux.Vars(r)
+		m["type"] = TypeIP
+		mux.SetURLVars(r, m)
+		rf(w, r)
+	}
 }
 
 func hasValidType(r *http.Request) error {
@@ -152,6 +170,15 @@ func httpHeartbeat(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	err := sruntime.statsd.InvalidUrl()
+	if err != nil {
+		log.Warnf(err.Error())
+	}
+	w.WriteHeader(http.StatusNotFound)
+	return
 }
 
 func httpGetViolations(w http.ResponseWriter, r *http.Request) {

@@ -7,7 +7,7 @@ import (
 )
 
 type statsdClient struct {
-	client *statsd.Client
+	client statsd.ClientInterface
 }
 
 func newStatsdClient(cfg serverCfg) (*statsdClient, error) {
@@ -28,4 +28,11 @@ func (sc statsdClient) Timing(name string, value time.Duration) error {
 		return nil
 	}
 	return sc.client.Timing(name, value, []string{}, 1)
+}
+
+func (sc statsdClient) InvalidUrl() error {
+	if sc.client == nil {
+		return nil
+	}
+	return sc.client.Incr("handler.invalid_url", []string{}, 1)
 }

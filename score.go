@@ -94,11 +94,11 @@ func keyFromTypeAndValue(typestr string, valstr string) (string, error) {
 			// Postfix the address value in the key with a separator and the configured
 			// IPv6 subnet width; this will invalidate all existing IPv6 reputation
 			// values if the configuration value is changed.
-			return typestr + "#" + buf +
+			return typestr + " " + buf +
 				"#" + strconv.Itoa(sruntime.cfg.IP6Prefix), nil
 		}
 	}
-	return typestr + "#" + buf, nil
+	return typestr + " " + buf, nil
 }
 
 func (r *Reputation) set() error {
