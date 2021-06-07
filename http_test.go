@@ -1037,3 +1037,48 @@ func TestZeroViolation(t *testing.T) {
 	assert.Equal(t, 100, r.Reputation)
 	assert.Equal(t, false, r.Reviewed)
 }
+
+func TestHandlersLegacy(t *testing.T) {
+	mockStats := newMockStatsClient()
+	assert.Nil(t, baseTest())
+	sruntime.cfg.Auth.DisableAuth = true
+	sruntime.statsd.client = mockStats
+	h := mwHandler(newRouter())
+
+	// request reputation for a stored ip
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/192.168.0.1", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	res := recorder.Result()
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	buf, err := ioutil.ReadAll(res.Body)
+	assert.Nil(t, err)
+	var r Reputation
+	err = json.Unmarshal(buf, &r)
+	assert.Nil(t, err)
+	assert.Equal(t, "192.168.0.1", r.Object)
+	assert.Equal(t, 50, r.Reputation)
+	assert.Equal(t, false, r.Reviewed)
+	// The object and type fields should also be set on request to the legacy endpoint
+	// here
+	assert.Equal(t, "192.168.0.1", r.Object)
+	assert.Equal(t, TypeIP, r.Type)
+	assert.Equal(t, 0.0, mockStats.NumInvalid)
+
+	// request reputation for an unknown ip
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/192.168.0.2", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	assert.Equal(t, 0.0, mockStats.NumInvalid)
+
+	// request reputation for invalid ip, should get a 404 as it will not match
+	// the handler regex
+	recorder = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/255.2555.255.255", nil)
+	h.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
+	assert.Equal(t, 1.0, mockStats.NumInvalid)
+
+}

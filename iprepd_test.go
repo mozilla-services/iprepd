@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-go/statsd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,6 +17,24 @@ const (
 	testVersion = "testversion"
 	testSource  = "https://github.com/mozilla-services/iprepd"
 )
+
+type mockStatsClient struct {
+	statsd.NoOpClient
+	NumInvalid float64
+}
+
+func newMockStatsClient() *mockStatsClient {
+	return &mockStatsClient{
+		NumInvalid: 0.0,
+	}
+}
+
+func (m *mockStatsClient) Incr(name string, tags []string, rate float64) error {
+	if name == ("handler.invalid_url") {
+		m.NumInvalid = m.NumInvalid + 1.0
+	}
+	return nil
+}
 
 func baseTest() error {
 	_, err := sruntime.redis.flushAll().Result()
