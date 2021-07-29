@@ -1,12 +1,13 @@
 package iprepd
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,21 +17,21 @@ type redisLink struct {
 }
 
 func (r *redisLink) keys(pattern string) *redis.StringSliceCmd {
-	return r.master.Keys(pattern)
+	return r.master.Keys(context.Background(), pattern)
 }
 
 func (r *redisLink) del(k ...string) *redis.IntCmd {
-	return r.master.Del(k...)
+	return r.master.Del(context.Background(), k...)
 }
 
 func (r *redisLink) flushAll() *redis.StatusCmd {
-	return r.master.FlushAll()
+	return r.master.FlushAll(context.Background())
 }
 
 func (r *redisLink) get(k string) (ret []byte, err error) {
 	p := rand.Perm(len(r.readClients))
 	for _, i := range p {
-		ret, err = r.readClients[i].Get(k).Bytes()
+		ret, err = r.readClients[i].Get(context.Background(), k).Bytes()
 		if err == nil || (err != nil && err == redis.Nil) {
 			return
 		}
@@ -42,20 +43,30 @@ func (r *redisLink) get(k string) (ret []byte, err error) {
 }
 
 func (r *redisLink) ping() *redis.StatusCmd {
-	return r.master.Ping()
+	return r.master.Ping(context.Background())
 }
 
 func (r *redisLink) set(k string, v interface{}, e time.Duration) *redis.StatusCmd {
-	return r.master.Set(k, v, e)
+	return r.master.Set(context.Background(), k, v, e)
 }
 
-func instrumentRedisCmd(old func(cmd redis.Cmder) error) func(cmd redis.Cmder) error {
-	return func(cmd redis.Cmder) error {
-		s := time.Now()
-		err := old(cmd)
-		sruntime.statsd.Timing(fmt.Sprintf("redis.%s.timing", cmd.Name()), time.Since(s))
-		return err
-	}
+type redisTimingHook struct{}
+
+func (rth redisTimingHook) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context.Context, error) {
+	return context.WithValue(ctx, "start_time", time.Now()), nil
+}
+
+func (rth redisTimingHook) AfterProcess(ctx context.Context, cmd redis.Cmder) error {
+	s := ctx.Value("start_time").(time.Time)
+	return sruntime.statsd.Timing(fmt.Sprintf("redis.%s.timing", cmd.Name()), time.Since(s))
+}
+
+func (rth redisTimingHook) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmder) (context.Context, error) {
+	return ctx, nil
+}
+
+func (rth redisTimingHook) AfterProcessPipeline(ctx context.Context, cmds []redis.Cmder) error {
+	return nil
 }
 
 func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
@@ -75,7 +86,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 		PoolSize:     cfg.Redis.MaxPoolSize,
 		MinIdleConns: minIdleConns,
 	})
-	ret.master.WrapProcess(instrumentRedisCmd)
+	ret.master.AddHook(redisTimingHook{})
 	_, err = ret.ping().Result()
 	if err != nil {
 		return
@@ -95,7 +106,7 @@ func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
 			PoolSize:     cfg.Redis.MaxPoolSize,
 			MinIdleConns: minIdleConns,
 		})
-		y.WrapProcess(instrumentRedisCmd)
+		y.AddHook(redisTimingHook{})
 		ret.readClients = append(ret.readClients, y)
 	}
 	// Also use the master for reads
