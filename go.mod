@@ -5,8 +5,7 @@ go 1.16
 require (
 	github.com/DataDog/datadog-go v4.7.0+incompatible
 	github.com/asergeyev/nradix v0.0.0-20170505151046-3872ab85bb56 // indirect
-	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/go-redis/redis/v8 v8.11.1 // indirect
+	github.com/go-redis/redis/v8 v8.11.2 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/sirupsen/logrus v1.8.1
