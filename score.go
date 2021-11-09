@@ -231,6 +231,12 @@ func repDump() (ret []Reputation, err error) {
 		if err != nil {
 			return ret, err
 		}
+
+		err = reputation.applyDecay()
+		if err != nil {
+			return ret, err
+		}
+
 		ret = append(ret, reputation)
 	}
 
