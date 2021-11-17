@@ -13,14 +13,14 @@ import (
 )
 
 type serverRuntime struct {
-	cfg              serverCfg
+	cfg              ServerCfg
 	redis            redisLink
 	versionResponse  []byte
 	exceptionsLoaded chan bool
 	statsd           *statsdClient
 }
 
-type serverCfg struct {
+type ServerCfg struct {
 	Listen string
 	Redis  struct {
 		Addr         string
@@ -52,9 +52,17 @@ type serverCfg struct {
 	Statsd          struct {
 		Addr string
 	}
+	Sync struct {
+		MinimumReputation int
+		DeleteFile        bool
+		GCS               struct {
+			Filename   string
+			Bucketname string
+		}
+	}
 }
 
-func (cfg *serverCfg) validate() error {
+func (cfg *ServerCfg) validate() error {
 	if cfg.VersionResponse == "" {
 		cfg.VersionResponse = "./version.json"
 	}
@@ -76,7 +84,7 @@ func (cfg *serverCfg) validate() error {
 	return nil
 }
 
-func (cfg *serverCfg) getViolation(v string) *Violation {
+func (cfg *ServerCfg) getViolation(v string) *Violation {
 	for _, x := range cfg.Violations {
 		if x.Name == v {
 			return &x
@@ -92,7 +100,7 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-func loadCfg(confpath string) (ret serverCfg, err error) {
+func LoadCfg(confpath string) (ret ServerCfg, err error) {
 	buf, err := ioutil.ReadFile(confpath)
 	if err != nil {
 		return
@@ -113,13 +121,10 @@ func loadCfg(confpath string) (ret serverCfg, err error) {
 	return ret, ret.validate()
 }
 
-// StartDaemon starts a new instance of iprepd using configuration file confpath.
-func StartDaemon(confpath string) {
-	log.Infof("starting daemon")
-
+func CreateServerRuntime(confpath string) {
 	var err error
 	sruntime.exceptionsLoaded = make(chan bool, 1)
-	sruntime.cfg, err = loadCfg(confpath)
+	sruntime.cfg, err = LoadCfg(confpath)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -135,6 +140,14 @@ func StartDaemon(confpath string) {
 	if err != nil {
 		log.Warnf(err.Error())
 	}
+}
+
+// StartDaemon starts a new instance of iprepd using configuration file confpath.
+func StartDaemon(confpath string) {
+	log.Infof("starting daemon")
+
+	CreateServerRuntime(confpath)
+
 	go startExceptions()
 	select {
 	case <-sruntime.exceptionsLoaded:
@@ -142,7 +155,7 @@ func StartDaemon(confpath string) {
 	case <-time.After(5 * time.Second):
 		log.Fatalf("initial exception load timed out")
 	}
-	err = startAPI()
+	err := startAPI()
 	if err != nil {
 		log.Fatalf(err.Error())
 	}

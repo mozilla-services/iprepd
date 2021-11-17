@@ -69,7 +69,7 @@ func (rth redisTimingHook) AfterProcessPipeline(ctx context.Context, cmds []redi
 	return nil
 }
 
-func newRedisLink(cfg serverCfg) (ret redisLink, err error) {
+func newRedisLink(cfg ServerCfg) (ret redisLink, err error) {
 	minIdleConns := cfg.Redis.MinIdleConn
 	if cfg.Redis.MaxPoolSize != 0 && cfg.Redis.MaxPoolSize < 20 {
 		minIdleConns = cfg.Redis.MaxPoolSize
