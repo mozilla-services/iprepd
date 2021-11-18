@@ -93,14 +93,14 @@ func baseTest() error {
 }
 
 func TestLoadSampleConfig(t *testing.T) {
-	_, err := loadCfg("./iprepd.yaml.sample")
+	_, err := LoadCfg("./iprepd.yaml.sample")
 	assert.Nil(t, err)
 }
 
 func TestMain(m *testing.M) {
 	var (
 		err  error
-		tcfg serverCfg
+		tcfg ServerCfg
 	)
 	tcfg.Redis.Addr = "127.0.0.1:6379"
 	err = tcfg.validate()

@@ -213,7 +213,7 @@ func repDelete(typestr string, valstr string) (err error) {
 	return
 }
 
-func repDump() (ret []Reputation, err error) {
+func RepDump() (ret []Reputation, err error) {
 	keys, err := sruntime.redis.keys("*").Result()
 	if err != nil {
 		return

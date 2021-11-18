@@ -10,7 +10,7 @@ type statsdClient struct {
 	client statsd.ClientInterface
 }
 
-func newStatsdClient(cfg serverCfg) (*statsdClient, error) {
+func newStatsdClient(cfg ServerCfg) (*statsdClient, error) {
 	if cfg.Statsd.Addr == "" {
 		return &statsdClient{client: nil}, nil
 	}

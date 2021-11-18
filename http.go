@@ -193,7 +193,7 @@ func httpGetViolations(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpGetAllReputation(w http.ResponseWriter, r *http.Request) {
-	allRep, err := repDump()
+	allRep, err := RepDump()
 	if err != nil {
 		if err == redis.Nil {
 			w.WriteHeader(http.StatusNotFound)
