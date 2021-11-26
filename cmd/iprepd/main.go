@@ -129,11 +129,5 @@ func uploadFileToGCS(config iprepd.ServerCfg, filename string) error {
 		return fmt.Errorf("Writer.Close: %v", err)
 	}
 
-	// Make the object public
-	obj := client.Bucket(config.Sync.GCS.Bucketname).Object(config.Sync.GCS.Filename)
-	if err := obj.ACL().Set(ctx, storage.AllUsers, storage.RoleReader); err != nil {
-		return err
-	}
-
 	return nil
 }
