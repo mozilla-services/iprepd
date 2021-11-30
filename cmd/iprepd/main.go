@@ -58,7 +58,7 @@ func main() {
 
 func IPBlocklistGCS(config iprepd.ServerCfg, reputationDump []iprepd.Reputation) error {
 	var (
-		blocklistFile       = "./ip-blocklist.txt"
+		blocklistFile       = "./ip-blocklist"
 		ipBlocklistContents string
 		cnt                 int
 	)
