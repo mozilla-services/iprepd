@@ -99,6 +99,7 @@ statsd:
   addr: "127.0.0.1:8125"
 # sync config is used sync subcommands to create and upload ip blocklists
 sync:
+  maxlimit: 20000
   minimumreputation: 60
   deletefile: false
   gcs:

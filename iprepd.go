@@ -53,6 +53,7 @@ type ServerCfg struct {
 		Addr string
 	}
 	Sync struct {
+		MaxLimit          int
 		MinimumReputation int
 		DeleteFile        bool
 		GCS               struct {

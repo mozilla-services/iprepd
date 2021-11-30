@@ -74,7 +74,7 @@ func IPBlocklistGCS(config iprepd.ServerCfg, reputationDump []iprepd.Reputation)
 		ipBlocklistContents = ipBlocklistContents + fmt.Sprintf("%s/32\n", rep.Object)
 
 		cnt++
-		if cnt == 20000 {
+		if cnt == config.Sync.MaxLimit {
 			break
 		}
 
