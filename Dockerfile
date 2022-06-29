@@ -1,4 +1,4 @@
-FROM golang:1.16
+FROM golang:1.18
 
 ADD . /go/src/go.mozilla.org/iprepd
 
